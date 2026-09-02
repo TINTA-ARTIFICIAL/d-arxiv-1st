@@ -72,7 +72,7 @@ d-arxiv-1st/
 └── README.md
 ```
 
-**Decisión:** `lib/` nunca importa nada de Claude Code ni del plugin. `cli/` y `skills/` son las dos interfaces sobre el mismo motor. **Justificación:** permite añadir una interfaz MCP en Fase 3 sin tocar el motor — mismo patrón que le funcionó a `ta-ops` (lib/ vs ta_mcp/).
+**Decisión:** `lib/` nunca importa nada de Claude Code ni del plugin. `cli/` y `skills/` son las dos interfaces sobre el mismo motor. **Justificación:** permite añadir una interfaz MCP en Fase 3 sin tocar el motor.
 
 ---
 
