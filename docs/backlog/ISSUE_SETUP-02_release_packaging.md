@@ -7,7 +7,7 @@ sprint: backlog
 status: TODO
 priority: P2
 depends_on: [LIB-01, LIB-02, LIB-03, LIB-04]
-blocks: []
+blocks: [PLUGIN-01]
 assignee: null
 started: null
 completed: null
