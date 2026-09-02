@@ -20,6 +20,8 @@ Empaqueta el skill (`SKILL-01`) y el wizard (`SETUP-01`) como plugin instalable 
 
 La solución: un **script de arranque** (`scripts/bootstrap.py`) que vive en el plugin, no en el paquete distribuido por pip, escrito solo con librería estándar de Python (sin imports de `lib/`). Es lo único que se ejecuta con el Python del sistema; todo lo demás corre ya dentro del venv que este script crea.
 
+**Repo público, decisión explícita.** `bootstrap.py` descarga el wheel y el `.zip` del skill desde una release de GitHub con `urllib` sin autenticación. Eso no funciona contra un repo privado — GitHub exige token incluso para descargar assets de una release privada. `TINTA-ARTIFICIAL/d-arxiv-1st` se pasó a público específicamente por esto: para que un usuario final sin token de GitHub pueda instalar. Si en el futuro hiciera falta volver a privado (contenido sensible en el repo), `bootstrap.py` tendría que ganar soporte de autenticación — no es el caso hoy.
+
 ## Artefactos
 
 ### `scripts/bootstrap.py`
@@ -60,6 +62,7 @@ No reimplementa el wizard en markdown/prompt — es un envoltorio fino sobre `bo
 | `bootstrap.py` es un fichero separado en stdlib puro, no reutiliza `install_engine()`/`check_prerequisites()` de `lib/` | Que el slash command intente importar `lib/` directamente | `lib/` no existe todavía en ningún Python accesible la primera vez — es exactamente lo que `bootstrap.py` tiene que instalar. Duplicar la lógica mínima (crear venv, pip install) en stdlib es el precio de resolver el huevo y la gallina |
 | El comando de setup invoca un script real por Bash, no reimplementa los prompts en el propio markdown del comando | Escribir la lógica del wizard directamente como instrucciones para Claude | Una sola implementación del flujo interactivo (Python, testeable) en vez de dos (Python + prompt) que puedan divergir |
 | Instalación exclusivamente vía plugin + `bootstrap.py`, sin camino de "clonar el repo y apuntar Claude Code ahí" para el usuario final | Documentar también la instalación manual por git clone como alternativa soportada | Contradice el objetivo de este ticket (§03b de ARCHITECTURE.md): el usuario final no debe necesitar git. Clonar el repo sigue siendo válido, pero como *desarrollador*, no como forma de instalar el plugin |
+| Repo `TINTA-ARTIFICIAL/d-arxiv-1st` público, `bootstrap.py` descarga sin autenticación | Repo privado + `bootstrap.py` con soporte de token de GitHub | Un repo privado exige token incluso para descargar un asset de release — justo la fricción técnica que este ticket existe para evitar; el contenido del repo (motor genérico de ingesta de archive.org) no tiene nada sensible que proteger |
 
 ## Fuera de scope
 
@@ -77,4 +80,4 @@ No reimplementa el wizard en markdown/prompt — es un envoltorio fino sobre `bo
 ## Estado de revisión
 
 - Propuesto: 2026-09-02
-- Aprobado: PENDIENTE
+- Aprobado: 2026-09-02 — supervisor (chat): repo pasado a público para que bootstrap.py funcione sin token
