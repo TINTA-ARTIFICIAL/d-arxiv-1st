@@ -6,7 +6,11 @@ Herramienta independiente, sin dependencia de `ta-ops`. Ver [`ARCHITECTURE.md`](
 
 ## Estado
 
-En diseño — ver `docs/backlog/` para los tickets especificados y su orden de dependencias. Ningún código se implementa sin ticket aprobado.
+En diseño — ver `docs/backlog/` para los tickets especificados y su orden de dependencias. Ningún código se implementa sin ticket aprobado, siguiendo [`docs/DEV_STANDARDS.md`](docs/DEV_STANDARDS.md).
+
+## Implementación asistida
+
+El backlog está en formato compatible con `D-dispatcher`/`D-developer` (skill y subagente definidos a nivel de usuario en `~/.claude/`). Invocar `/D-dispatcher` despacha en paralelo los tickets listos, valida cada uno de forma independiente contra su propio contrato, y mergea a `main` automáticamente si pasa.
 
 ## Publicación piloto
 
