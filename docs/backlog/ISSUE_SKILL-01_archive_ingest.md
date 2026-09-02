@@ -27,10 +27,6 @@ branch: null
 3. **Pedir una página como imagen** — si el usuario menciona una página impresa concreta ("tráeme la portada del artículo de Bateson, p.16"), usar `resolve_leaf` + `fetch_page_image` (LIB-02) bajo demanda, nunca automáticamente.
 4. **Traer una colección completa (Fase 2)** — dado un `publication.key` con `mode: discover_collection`, llamar `search_collection`, listar candidatos, y NO descargar nada hasta que el usuario confirme cuáles.
 
-## Estructuras de datos
-
-N/A — este ticket no persiste nada propio. Opera enteramente sobre las estructuras ya definidas en `LIB-02` (`sources/{identifier}/`), `LIB-03` (`processed/{identifier}/`) y `LIB-04` (`publications.yaml`); el `SKILL.md` que produce es texto de instrucciones, no un fichero de datos con schema propio.
-
 ## Decisiones de diseño
 
 | Decisión | Alternativa descartada | Justificación |
