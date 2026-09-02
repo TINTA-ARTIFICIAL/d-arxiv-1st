@@ -1,0 +1,29 @@
+[project]
+name = "d-arxiv-1st"
+version = "0.1.0"
+description = "Descarga, procesa e indexa publicaciones de Internet Archive para explotacion con IA"
+requires-python = ">=3.11"
+dependencies = [
+  "requests>=2.31.0",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "pytest-cov>=5.0.0"]
+
+[project.scripts]
+d-arxiv = "cli.main:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lib*", "cli*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "integration: hits the real archive.org API (network required)",
+]

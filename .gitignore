@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.egg-info/
+.env
+d_arxiv_1st.egg-info/
+
+# workspace de ejemplo si se crea dentro del repo durante desarrollo
+/workspace/
