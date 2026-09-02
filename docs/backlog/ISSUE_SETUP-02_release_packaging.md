@@ -90,4 +90,4 @@ def publish_release(
 ## Estado de revisión
 
 - Propuesto: 2026-09-02
-- Aprobado: PENDIENTE
+- Aprobado: 2026-09-02 — supervisor (chat)
