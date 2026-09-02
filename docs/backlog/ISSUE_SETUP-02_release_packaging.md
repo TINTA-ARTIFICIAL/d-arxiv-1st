@@ -69,15 +69,6 @@ def publish_release(
     """
 ```
 
-## Estructuras de datos
-
-Sin persistencia propia — este ticket no escribe ningún fichero de estado. Los únicos shapes de datos son los `dict` de retorno ya documentados en `Returns` de cada función de "Interfaces":
-
-```
-build_wheel(...)   -> Path                                              # ruta del .whl
-publish_release(...) -> {"release_url": str, "wheel_asset_url": str, "skill_asset_url": str}
-```
-
 ## Decisiones de diseño
 
 | Decisión | Alternativa descartada | Justificación |
