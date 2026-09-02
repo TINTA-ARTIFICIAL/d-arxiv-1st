@@ -4,14 +4,14 @@ title: Config del motor, estado de instalación y publications.yaml del workspac
 type: feature
 subsystem: LIB
 sprint: backlog
-status: TODO
+status: IN_PROGRESS
 priority: P1
 depends_on: []
 blocks: [LIB-02, SETUP-01, SETUP-02]
-assignee: null
-started: null
+assignee: D-developer
+started: 2026-09-03
 completed: null
-branch: null
+branch: feat/LIB-04-config
 ---
 
 # LIB-04 — Config del motor, estado de instalación y publications.yaml del workspace

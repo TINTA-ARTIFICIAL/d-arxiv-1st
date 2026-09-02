@@ -7,7 +7,7 @@ Un ticket por pieza de funcionalidad. Ninguno pasa a `IN_PROGRESS` sin estado de
 | ID | Título | Prioridad | Status | Depende de |
 |---|---|---|---|---|
 | [LIB-01](ISSUE_LIB-01_archive_client.md) | Cliente de solo-lectura de la API de archive.org | P1 | TODO | — |
-| [LIB-04](ISSUE_LIB-04_config.md) | Config de máquina y publications.yaml | P1 | TODO | — |
+| [LIB-04](ISSUE_LIB-04_config.md) | Config de máquina y publications.yaml | P1 | IN_PROGRESS | — |
 | [LIB-02](ISSUE_LIB-02_downloader.md) | Descarga esencial + bajo demanda al workspace | P1 | TODO | LIB-01, LIB-04 |
 | [LIB-03](ISSUE_LIB-03_processor.md) | Persistir estructura indexada como Markdown (write_processed) | P1 | TODO | LIB-02 |
 | [SETUP-01](ISSUE_SETUP-01_wizard.md) | Wizard de instalación (usuario final, sin git) | P1 | TODO | LIB-01, LIB-02, LIB-04 |
