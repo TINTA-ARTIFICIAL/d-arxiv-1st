@@ -59,6 +59,22 @@ Slash command `/d-arxiv-1st:setup`. Contenido: instruye a Claude a ejecutar `pyt
 
 No reimplementa el wizard en markdown/prompt — es un envoltorio fino sobre `bootstrap.py` → `d-arxiv wizard`, para que la única fuente de verdad del flujo interactivo sea `SETUP-01`.
 
+## Estructuras de datos
+
+La única estructura persistente de este ticket es `.claude-plugin/plugin.json`, ya mostrada en "Artefactos" arriba — se repite aquí por completitud del contrato:
+
+```json
+{
+  "name": "d-arxiv-1st",       // str, requerido
+  "version": "0.1.0",           // str, semver
+  "description": "...",         // str
+  "skills": ["skills/archive-ingest"],  // list[str], rutas relativas
+  "commands": ["commands/setup.md"]     // list[str], rutas relativas
+}
+```
+
+`scripts/bootstrap.py` y `commands/setup.md` no tienen estructura de datos propia — son código y prompt respectivamente, ya especificados en "Artefactos".
+
 ## Decisiones de diseño
 
 | Decisión | Alternativa descartada | Justificación |
