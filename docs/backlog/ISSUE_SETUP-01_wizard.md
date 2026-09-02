@@ -79,7 +79,11 @@ def install_skill(source_dir: Path, scope: str) -> Path:
 
 ## Estructuras de datos
 
-Salida final: los dos ficheros de config especificados en LIB-04 (`~/.d-arxiv-1st/config.yaml` y `{workspace}/publications.yaml`), escritos vía `lib.config.save_machine_config` y `lib.config.add_publication`.
+Salida final: los tres ficheros de config especificados en LIB-04, cada uno con su función — `run_wizard` nunca escribe YAML directamente:
+
+- `lib.config.save_config(...)` → `~/.d-arxiv-1st/config.yaml` (workspace root, política de descarga)
+- `lib.config.save_install_state(...)` → `~/.d-arxiv-1st/install.yaml` (scope, skill_path, installed_at — resultado del paso 7/`install_skill`)
+- `lib.config.add_publication(...)` → `{workspace}/publications.yaml` (la publicación inicial del paso 2)
 
 ## Decisiones de diseño
 
@@ -88,6 +92,7 @@ Salida final: los dos ficheros de config especificados en LIB-04 (`~/.d-arxiv-1s
 | `run_wizard` acepta `non_interactive_answers` desde el diseño inicial | Añadirlo después como parche para el slash command | El slash command de PLUGIN-01 necesita poder ejecutar el wizard sin un TTY interactivo real; diseñarlo desde el principio evita dos code paths divergentes |
 | `install_skill` rechaza sobreescribir un destino que ya existe y difiere | Sobreescribir siempre sin preguntar | Evita perder cambios manuales del usuario en su copia instalada del skill sin que se dé cuenta — coherente con la regla general de no descartar trabajo existente sin confirmación |
 | Paso 6 (dependencias) crea un venv propio por defecto en `{repo}/.venv`, no usa el Python del sistema | Instalar siempre en el Python del sistema/activo | Evita colisiones de versiones de dependencias con otros proyectos Python del Productor (mismo problema que resuelve cualquier venv) |
+| `run_wizard` persiste con `save_config` + `save_install_state` por separado (LIB-04), nunca escribe un YAML combinado | Escribir un único fichero de resultado del wizard | Mantiene la separación motor/instalación decidida en LIB-04 — si el wizard mezclara ambos al escribir, la separación de esquemas de LIB-04 no serviría de nada |
 
 ## Fuera de scope
 

@@ -126,9 +126,11 @@ Evaluación de los formatos que ofrece archive.org para un item de tipo `texts` 
 
 ---
 
-## 06 Config de máquina — `~/.d-arxiv-1st/config.yaml`
+## 06 Config de máquina — `config.yaml` + `install.yaml`
 
-No vive en el workspace (es específica de esta instalación, no se sincroniza):
+Dos ficheros en `~/.d-arxiv-1st/`, separados a propósito (LIB-04): ninguno vive en el workspace, ninguno se sincroniza, pero tienen dueños distintos y ciclos de vida distintos.
+
+**`config.yaml`** — config del *motor*. La lee `lib/`/`cli/` y, en Fase 3, el servidor MCP colaborativo:
 
 ```yaml
 workspace:
@@ -138,7 +140,14 @@ download:
   image_default_size: w500        # medium | w500 | w1000
 python:
   bin: /opt/homebrew/bin/python3.11
-install_scope: user                # user | project — dónde se registró el skill
+```
+
+**`install.yaml`** — estado de *esta instalación del skill/plugin en Claude Code*. Solo la tocan `SETUP-01` y `PLUGIN-01`; el motor nunca la lee. Se mantiene aparte porque un servidor MCP compartido (Fase 3) no tiene sentido acoplado a "dónde se copió un skill en la máquina de un usuario":
+
+```yaml
+scope: user                        # user | project — dónde se registró el skill
+skill_path: /Users/.../.claude/skills/archive-ingest
+installed_at: "2026-09-02"
 ```
 
 ## 07 Config de workspace — `publications.yaml`
