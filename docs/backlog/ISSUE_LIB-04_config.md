@@ -36,9 +36,11 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> dict:
 
     Returns:
         dict con las keys workspace.root (str | None), download.always_pdf
-        (bool, default False), download.image_default_size (str, default 'w500'),
-        python.bin (str | None).
+        (bool, default False), download.image_default_size (str, default 'w500').
         Si 'path' no existe, devuelve todos los defaults (workspace.root=None).
+        No incluye la ruta de Python: el motor se invoca siempre en
+        ~/.d-arxiv-1st/venv/bin/d-arxiv, una ruta fija (ver SETUP-01/SETUP-02)
+        que no necesita registrarse.
     """
 
 def save_config(config: dict, path: Path = DEFAULT_CONFIG_PATH) -> Path:
@@ -140,8 +142,6 @@ workspace:
 download:
   always_pdf: false               # bool
   image_default_size: w500        # medium | w500 | w1000
-python:
-  bin: /opt/homebrew/bin/python3.11   # str | null
 ```
 
 `~/.d-arxiv-1st/install.yaml`:
@@ -170,6 +170,7 @@ archive_collection: coevolutionquarterly  # str, requerido si mode=discover_coll
 | `config.yaml` e `install.yaml` son ficheros separados, funciones separadas (`load_config`/`save_config` vs `load_install_state`/`save_install_state`) | Un único `config.yaml` con todo (versión original del ticket) | Dependencia futura real: el servidor MCP de Fase 3 leerá `config.yaml` pero no debe acoplarse a `install.yaml` (concepto de "skill instalado en Claude Code" que no existe en un servidor) — separar ahora evita una migración de esquema más tarde |
 | `load_config` y `load_install_state` nunca lanzan error si el fichero no existe — devuelven defaults / todo-None | Lanzar `FileNotFoundError` y forzar a ejecutar el wizard primero | El wizard (SETUP-01) es quien crea ambos ficheros; el resto del código debe poder importarse y usarse (tests, CLI `--help`) sin haber corrido el wizard |
 | `save_publications` valida el esquema completo antes de escribir | Escribir tal cual y validar solo al leer | Falla rápido en el punto de escritura (el wizard o el comando que añade una publicación), no silenciosamente más tarde al intentar descargar |
+| `config.yaml` no guarda la ruta de Python (campo `python.bin` eliminado tras revisión de SETUP-01) | Guardar la ruta del intérprete usado por el wizard | El motor se instala siempre en `~/.d-arxiv-1st/venv/`, una ruta fija — no hace falta registrar qué Python se usó, `~/.d-arxiv-1st/venv/bin/d-arxiv` ya resuelve el intérprete correcto sin ambigüedad |
 | `image_default_size` restringido a `{medium, w500, w1000}` | Aceptar cualquier string y dejar que falle en la descarga | Son los tres tamaños que expone el endpoint `/page/{leaf}_{size}.jpg` de archive.org (verificado en LIB-01/LIB-02); validar aquí da un error claro antes de tocar la red |
 
 ## Fuera de scope

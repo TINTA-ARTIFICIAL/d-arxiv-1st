@@ -62,7 +62,9 @@ d-arxiv-1st/
 │   └── archive-ingest/
 │       └── SKILL.md           ← instrucciones para Claude: cómo usar el motor conversacionalmente
 ├── commands/
-│   └── setup.md               ← slash command /d-arxiv-1st:setup → lanza el wizard
+│   └── setup.md               ← slash command /d-arxiv-1st:setup → ejecuta scripts/bootstrap.py
+├── scripts/
+│   └── bootstrap.py            ← stdlib puro, sin imports de lib/ — crea el venv e instala el motor (PLUGIN-01)
 ├── lib/                        ← motor Python puro, sin imports de Claude
 ├── cli/                        ← CLI `d-arxiv` (dev, debugging, y backend del wizard)
 ├── tests/
@@ -73,6 +75,19 @@ d-arxiv-1st/
 ```
 
 **Decisión:** `lib/` nunca importa nada de Claude Code ni del plugin. `cli/` y `skills/` son las dos interfaces sobre el mismo motor. **Justificación:** permite añadir una interfaz MCP en Fase 3 sin tocar el motor.
+
+---
+
+## 03b Distribución — repo de desarrollo vs. instalación de usuario final
+
+**Este repositorio es para desarrollo, no para instalar.** El público del plugin no son solo desarrolladores — un Productor sin experiencia técnica tiene que poder instalarlo sin `git clone`, sin saber qué es un venv, sin tocar una terminal más allá de pegar un comando o responder al wizard.
+
+Dos caminos, deliberadamente distintos:
+
+- **Desarrollador (contribuye a `d-arxiv-1st`)**: clona el repo, `pip install -e .[dev]`, trabaja sobre los tickets de `docs/backlog/`. Flujo de siempre, documentado en `README.md`/`CONTRIBUTING.md`, sin wizard — quien contribuye código ya sabe manejarse con git y pip.
+- **Usuario final (Productor que solo quiere usar el skill)**: instala desde una **release publicada** (ver `SETUP-02`), nunca desde un clon de git. El wizard (`SETUP-01`) crea un entorno autocontenido en `~/.d-arxiv-1st/venv/` — una ruta fija, propiedad del usuario, que no depende de que ningún directorio de repo siga existiendo en ningún sitio. Instalar, mover el plugin de carpeta, o borrar un clon de desarrollo en otra parte de la máquina no rompe nada.
+
+**Decisión:** el venv de instalación vive siempre en `~/.d-arxiv-1st/venv/`, nunca dentro de un checkout de git. **Alternativa descartada:** crear el venv dentro del propio directorio del repo clonado (`{repo}/.venv`), como hace `pip install -e .` en un flujo de desarrollador típico. **Justificación:** un editable install (`-e .`) enlaza el venv al código fuente en su ubicación original — si esa carpeta se mueve o se borra, el venv deja de funcionar en silencio. Para un usuario final eso es inaceptable; para un desarrollador es aceptable (sabe que no debe borrar su propio checkout).
 
 ---
 
@@ -138,9 +153,9 @@ workspace:
 download:
   always_pdf: false               # bool — si false, el PDF se pide bajo demanda
   image_default_size: w500        # medium | w500 | w1000
-python:
-  bin: /opt/homebrew/bin/python3.11
 ```
+
+No incluye la ruta de Python: el motor se invoca siempre en `~/.d-arxiv-1st/venv/bin/d-arxiv` — una ruta fija (§03b), no hace falta registrarla.
 
 **`install.yaml`** — estado de *esta instalación del skill/plugin en Claude Code*. Solo la tocan `SETUP-01` y `PLUGIN-01`; el motor nunca la lee. Se mantiene aparte porque un servidor MCP compartido (Fase 3) no tiene sentido acoplado a "dónde se copió un skill en la máquina de un usuario":
 
@@ -172,17 +187,17 @@ Ejecutable como `d-arxiv wizard` (CLI) o `/d-arxiv-1st:setup` (slash command del
 
 | Paso | Qué hace | Default |
 |---|---|---|
-| 0 | Verifica Python 3.11+ y conectividad a archive.org | — |
+| 0 | Verifica Python 3.11+ disponible en el sistema y conectividad a archive.org | — |
 | 1 | Pregunta la ruta del workspace | `~/D-ARXIV-1ST-workspace` |
 | 2 | Pregunta la publicación inicial (identifier suelto o colección) | — |
 | 3 | Pregunta política de descarga de PDF | bajo demanda |
 | 4 | Pregunta resolución por defecto de imágenes | `w500` |
 | 5 | Pregunta alcance de ingesta inicial (un número vs descubrir colección) | un número |
-| 6 | Instala dependencias (venv propio) + smoke test contra archive.org | venv propio |
+| 6 | Crea `~/.d-arxiv-1st/venv/` e instala el motor ahí desde una release publicada (§03b) + smoke test contra archive.org | última release de GitHub |
 | 7 | Pregunta ámbito de instalación del skill | usuario (`~/.claude/skills/`) |
 | 8 | Resumen + cómo invocar el skill | — |
 
-Ver `docs/backlog/ISSUE_SETUP-01_wizard.md` para la especificación completa (interfaces, casos de test).
+Ver `docs/backlog/ISSUE_SETUP-01_wizard.md` para la especificación completa (interfaces, casos de test) y `docs/backlog/ISSUE_SETUP-02_release_packaging.md` para cómo se publican las releases de las que instala el paso 6.
 
 ---
 
