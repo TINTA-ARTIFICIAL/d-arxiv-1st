@@ -47,6 +47,12 @@ def write_index(identifier: str, workspace: Path, data: dict) -> Path:
 def write_article(identifier: str, article_id: str, workspace: Path, data: dict) -> Path:
     """Escribe processed/{identifier}/articles/{article_id}.md.
 
+    Además, marca la entrada correspondiente en articulos[] de
+    processed/{identifier}/index.md con processed_at=hoy — así index.md
+    siempre refleja qué artículos de la lista ya tienen cuerpo escrito y
+    cuáles siguen pendientes (mismo patrón que _update_piece_indexed_at
+    en ta-ops).
+
     Args:
         identifier: identificador del item padre en archive.org.
         article_id: identificador del artículo — patrón {identifier}-{NN}
@@ -66,6 +72,8 @@ def write_article(identifier: str, article_id: str, workspace: Path, data: dict)
             cumple el patrón {identifier}-{NN}.
         FileNotFoundError: si processed/{identifier}/index.md no existe
             (write_index debe ejecutarse antes que el primer write_article).
+        LookupError: si article_id no aparece en articulos[] de index.md
+            (el artículo no fue declarado al indexar el número).
     """
 
 def read_index(identifier: str, workspace: Path) -> dict | None:
@@ -95,7 +103,8 @@ numero: "18"                             # str, opcional
 articulos:                               # list[dict], puede estar vacía hasta indexar
   - article_id: coevolutionquart00unse_15-01
     titulo: "The Pattern Which Connects"
-processed_at: 2026-09-02                 # date, autogenerado
+    processed_at: 2026-09-02               # date, null hasta que write_article lo procese
+processed_at: 2026-09-02                 # date, autogenerado — de write_index, no confundir con el de cada artículo
 ---
 
 (cuerpo libre en Markdown — notas del Productor, no estructurado)
@@ -135,6 +144,7 @@ items:
 | `processor.py` no interpreta texto, solo persiste estructura ya decidida | Que el módulo intente segmentar `djvu.txt` en artículos automáticamente (regex/heurística) | El TOC de archive.org es OCR crudo sin estructura fiable (verificado en LIB-01); segmentar bien requiere criterio editorial — es trabajo de Claude en el skill, no del motor |
 | `article_id` = `{identifier}-{NN}` | Un esquema legible tipo `{journal_code}-{fecha}-{NN}` (como ta-ops) | Sin ambigüedad ni colisión posible entre publicaciones distintas; no requiere que Claude derive un código de revista — trade-off aceptado: menos legible a cambio de determinismo |
 | `write_article` exige que `write_index` se haya ejecutado antes | Permitir escribir artículos sueltos sin índice padre | Evita artículos huérfanos sin número asociado en `catalog_index.yaml` |
+| `write_article` exige que `article_id` ya esté declarado en `articulos[]` de `index.md`, y marca esa entrada con `processed_at` | Permitir escribir cualquier `article_id` aunque no estuviera en la lista propuesta al indexar | Sin esto, `index.md` no puede responder "qué falta por procesar" — que es lo que necesita el paso 3 de SKILL-01; permitir artículos no declarados dejaría huecos en ese tracking |
 
 ## Fuera de scope
 
@@ -149,10 +159,13 @@ items:
 - `write_index(...)` llamado dos veces con el mismo identifier → upsert, no duplica entrada en `catalog_index.yaml`
 - `write_article(...)` con `article_id` que no matchea `{identifier}-{NN}` → lanza `ValueError`
 - `write_article(...)` sin `index.md` previo → lanza `FileNotFoundError`
+- `write_article(...)` con `article_id` no declarado en `articulos[]` de `index.md` → lanza `LookupError`
+- `write_article(...)` con `article_id` sí declarado → tras la llamada, `read_index(...)['articulos']` tiene esa entrada con `processed_at` igual a hoy; las demás entradas no declaradas siguen con `processed_at: null`
 - `read_index(...)` con identifier no procesado → devuelve `None`
 - `read_index(...)` tras `write_index(...)` → devuelve el mismo dict (round-trip)
 
 ## Estado de revisión
 
 - Propuesto: 2026-09-02
-- Aprobado: PENDIENTE
+- Fix de sincronización processed_at: aprobado 2026-09-02
+- Aprobación final: PENDIENTE — revisar primero el rol de write_article en el flujo (ver discusión en chat)
