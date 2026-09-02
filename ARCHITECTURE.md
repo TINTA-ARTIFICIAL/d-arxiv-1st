@@ -92,7 +92,7 @@ El workspace es una carpeta local o sincronizada (Drive, iCloud, lo que sea — 
 │       ├── page_numbers.json   ← mapa leaf → página impresa
 │       ├── {identifier}.pdf    ← opcional, bajo demanda (download.always_pdf)
 │       └── images/
-│           └── leaf-{n}.jpg    ← bajo demanda, página a página
+│           └── leaf-{n}_{size}.jpg  ← bajo demanda, página a página
 └── processed/
     └── {identifier}/
         ├── index.md            ← Markdown + front-matter YAML: metadatos + estructura del número
