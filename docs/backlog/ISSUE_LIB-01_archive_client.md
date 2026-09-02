@@ -8,6 +8,10 @@ status: TODO
 priority: P1
 depends_on: []
 blocks: [LIB-02]
+assignee: null
+started: null
+completed: null
+branch: null
 ---
 
 # LIB-01 — Cliente de solo-lectura para la API pública de archive.org

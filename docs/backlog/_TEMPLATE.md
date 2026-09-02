@@ -4,10 +4,14 @@ title: {título}
 type: feature | research | chore
 subsystem: LIB | CLI | SKILL | PLUGIN | SETUP
 sprint: backlog
-status: TODO
+status: TODO | IN_PROGRESS | IN_REVIEW | DONE | BLOCKED
 priority: P1 | P2 | P3
 depends_on: []
 blocks: []
+assignee: null
+started: null
+completed: null
+branch: null
 ---
 
 # {ID} — {título}

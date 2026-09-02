@@ -8,6 +8,10 @@ status: TODO
 priority: P1
 depends_on: [LIB-01, LIB-02, LIB-04]
 blocks: [PLUGIN-01]
+assignee: null
+started: null
+completed: null
+branch: null
 ---
 
 # SETUP-01 — Wizard de instalación

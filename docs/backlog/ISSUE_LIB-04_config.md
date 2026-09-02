@@ -8,6 +8,10 @@ status: TODO
 priority: P1
 depends_on: []
 blocks: [LIB-02, SETUP-01]
+assignee: null
+started: null
+completed: null
+branch: null
 ---
 
 # LIB-04 — Config del motor, estado de instalación y publications.yaml del workspace

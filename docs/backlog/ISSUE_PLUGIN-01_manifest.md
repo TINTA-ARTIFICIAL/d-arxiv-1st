@@ -8,6 +8,10 @@ status: TODO
 priority: P2
 depends_on: [SETUP-01, SETUP-02]
 blocks: []
+assignee: null
+started: null
+completed: null
+branch: null
 ---
 
 # PLUGIN-01 — Manifiesto del plugin, script de arranque y slash command de setup

@@ -8,6 +8,10 @@ status: TODO
 priority: P2
 depends_on: [LIB-01, LIB-02, LIB-03]
 blocks: []
+assignee: null
+started: null
+completed: null
+branch: null
 ---
 
 # SKILL-01 — Skill archive-ingest

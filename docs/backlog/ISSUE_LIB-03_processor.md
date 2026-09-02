@@ -8,6 +8,10 @@ status: TODO
 priority: P1
 depends_on: [LIB-02]
 blocks: []
+assignee: null
+started: null
+completed: null
+branch: null
 ---
 
 # LIB-03 — Persistir estructura indexada como Markdown procesado

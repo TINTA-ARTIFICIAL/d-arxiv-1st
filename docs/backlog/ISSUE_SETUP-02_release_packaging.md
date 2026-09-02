@@ -8,6 +8,10 @@ status: TODO
 priority: P2
 depends_on: [LIB-01, LIB-02, LIB-03, LIB-04]
 blocks: []
+assignee: null
+started: null
+completed: null
+branch: null
 ---
 
 # SETUP-02 — Empaquetado y publicación de releases en GitHub

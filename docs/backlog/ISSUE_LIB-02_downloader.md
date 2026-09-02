@@ -8,6 +8,10 @@ status: TODO
 priority: P1
 depends_on: [LIB-01, LIB-04]
 blocks: [LIB-03, SETUP-01]
+assignee: null
+started: null
+completed: null
+branch: null
 ---
 
 # LIB-02 — Descarga de material esencial y bajo demanda al workspace
