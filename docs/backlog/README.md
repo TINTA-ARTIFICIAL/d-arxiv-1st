@@ -13,7 +13,7 @@ Un ticket por pieza de funcionalidad. Ninguno pasa a `IN_PROGRESS` sin estado de
 | [SETUP-01](ISSUE_SETUP-01_wizard.md) | Wizard de instalación (usuario final, sin git) | P1 | IN_PROGRESS | LIB-01, LIB-02, LIB-04 |
 | [SETUP-02](ISSUE_SETUP-02_release_packaging.md) | Empaquetado y publicación de releases en GitHub | P2 | IN_PROGRESS | LIB-01, LIB-02, LIB-03, LIB-04 |
 | [PLUGIN-01](ISSUE_PLUGIN-01_manifest.md) | Manifiesto del plugin, script de arranque y slash command de setup | P2 | TODO | SETUP-01, SETUP-02 |
-| [SKILL-01](ISSUE_SKILL-01_archive_ingest.md) | Skill archive-ingest | P2 | IN_PROGRESS | LIB-01, LIB-02, LIB-03 |
+| [SKILL-01](ISSUE_SKILL-01_archive_ingest.md) | Skill archive-ingest | P2 | DONE | LIB-01, LIB-02, LIB-03 |
 
 ## Critical path
 
