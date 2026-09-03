@@ -15,8 +15,9 @@ Un ticket por pieza de funcionalidad. Ninguno pasa a `IN_PROGRESS` sin estado de
 | [PLUGIN-01](ISSUE_PLUGIN-01_manifest.md) | Manifiesto del plugin, script de arranque y slash command de setup | P2 | DONE | SETUP-01, SETUP-02 |
 | [SKILL-01](ISSUE_SKILL-01_archive_ingest.md) | Skill archive-ingest | P2 | DONE | LIB-01, LIB-02, LIB-03 |
 | [CLI-01](ISSUE_CLI-01_entrypoint.md) | Entry point del CLI d-arxiv (cli/main.py) | P1 | DONE | SETUP-01 |
+| [LIB-05](ISSUE_LIB-05_publication_nesting.md) | Anidar sources/processed por publicación; resolver publicacion_key antes de descargar | P1 | TODO | LIB-02, LIB-03, SKILL-01 |
 
-**Backlog original (8 tickets) completo — 62/62 tests pasan.** `CLI-01` se añadió después: gap real detectado en validación (`pyproject.toml` declara el entry point `d-arxiv` pero ningún ticket original implementaba `cli/main.py` — el motor está completo pero no conectado al comando real).
+**Backlog original (8 tickets) completo — 68/68 tests pasan.** `CLI-01` y `LIB-05` se añadieron después: gaps reales detectados en validación y en el diseño de la jerarquía del workspace (`pyproject.toml` declaraba un entry point sin implementar; `sources/`/`processed/` planos por identifier no distinguían revistas, y el flujo de registro de publicaciones podía perder identifiers ya conocidos al acumular varios números de la misma revista).
 
 ## Critical path
 
