@@ -24,6 +24,8 @@ Instala el motor en `~/.d-arxiv-1st/venv/` — una ruta fija propiedad del usuar
 
 El flujo completo y la tabla de pasos están en `ARCHITECTURE.md` §08; este ticket especifica el comportamiento exacto de cada paso.
 
+**Revisión 2026-09-03 — el wizard deja de preguntar sobre publicaciones.** La versión original pedía key/label/alcance/identifier(s) de una publicación inicial durante la instalación. Eso acopla "instalar la herramienta" a "qué voy a indexar hoy" — una decisión de tarea, no de instalación, y significa que instalar solo tiene sentido si ya sabes qué vas a traer en ese mismo momento. Se mueve a `SKILL-01`: la primera vez que el skill necesita una `publicacion_key` que no existe en `publications.yaml`, la registra ahí, conversacionalmente, en el momento en que hace falta de verdad. El wizard se reduce a lo que sí es genuinamente de instalación: dónde vive el workspace, y dónde se instala el skill. La política de descarga (`always_pdf`, `image_default_size`) tampoco se pregunta — se escribe con su default ya conocido (`false`/`w500`); quien quiera otra cosa edita `config.yaml` a mano.
+
 ## Interfaces
 
 ```python
@@ -46,17 +48,22 @@ def run_wizard(
     Returns:
         dict con:
             workspace_root (str)
-            publication (dict) — la publicación inicial creada
-            download (dict) — {always_pdf: bool, image_default_size: str}
+            download (dict) — {always_pdf: bool, image_default_size: str},
+                siempre el default (LIB-04) — el wizard no lo pregunta
             install_scope (str) — 'user' | 'project'
             skill_path (str) — ruta absoluta donde se instaló el skill
             venv_path (str) — ruta absoluta del venv (== str(DEFAULT_VENV))
             engine_source (str) — de dónde se instaló el motor (ver install_engine)
             smoke_test_passed (bool)
 
+    No incluye 'publication' — el wizard no crea ninguna publicación ni
+    toca publications.yaml (ver nota de revisión 2026-09-03 arriba;
+    SKILL-01 se encarga cuando hace falta de verdad).
+
     Raises:
         RuntimeError: si el paso 0 (verificación de Python/conectividad) falla,
             o si install_engine no consigue instalar el motor por ningún camino.
+        ValueError: si non_interactive_answers no incluye 'workspace_root'.
     """
 
 def check_prerequisites(python_min: tuple[int, int] = (3, 11)) -> dict:
@@ -130,9 +137,10 @@ def install_skill(source_dir: Path, scope: str) -> Path:
 
 Salida final: los tres ficheros de config especificados en LIB-04, cada uno con su función — `run_wizard` nunca escribe YAML directamente:
 
-- `lib.config.save_config(...)` → `~/.d-arxiv-1st/config.yaml` (workspace root, política de descarga)
+- `lib.config.save_config(...)` → `~/.d-arxiv-1st/config.yaml` (workspace root, política de descarga con su default, sin preguntar)
 - `lib.config.save_install_state(...)` → `~/.d-arxiv-1st/install.yaml` (scope, skill_path, installed_at, y además `venv_path`/`engine_source` del resultado de `install_engine`)
-- `lib.config.add_publication(...)` → `{workspace}/publications.yaml` (la publicación inicial del paso 2)
+
+`run_wizard` no llama a `lib.config.add_publication` en ningún caso — `publications.yaml` queda tal cual estuviera (inexistente o no) tras correr el wizard.
 
 ## Decisiones de diseño
 
@@ -143,6 +151,8 @@ Salida final: los tres ficheros de config especificados en LIB-04, cada uno con 
 | `install_engine` crea el venv en `~/.d-arxiv-1st/venv/` (ruta fija), nunca dentro de un checkout de git | Venv dentro del repo clonado (`{repo}/.venv`), como haría un `pip install -e .` de desarrollador | Un venv atado a la ubicación de un checkout se rompe en silencio si esa carpeta se mueve o se borra — inaceptable para un usuario final que no sabe que existe esa dependencia (ver ARCHITECTURE.md §03b) |
 | `install_engine` resuelve automáticamente release→editable-fallback, en vez de exigir siempre una release | Bloquear el wizard hasta que exista una release (dependencia dura de SETUP-02) | Permite implementar y testear SETUP-01 de forma aislada, y da un camino de arranque a quien prueba el wizard antes de la primera release, sin comprometer que el camino *por defecto* para un usuario final sea el paquete publicado |
 | `run_wizard` persiste con `save_config` + `save_install_state` por separado (LIB-04), nunca escribe un YAML combinado | Escribir un único fichero de resultado del wizard | Mantiene la separación motor/instalación decidida en LIB-04 — si el wizard mezclara ambos al escribir, la separación de esquemas de LIB-04 no serviría de nada |
+| El wizard no pregunta nada sobre publicaciones ni política de descarga — solo workspace y ámbito del skill | Preguntar key/label/alcance/identifier(s) de una publicación inicial (diseño original) | Esas son decisiones de "qué voy a trabajar hoy", no de "cómo instalo la herramienta" — acoplar instalación a una tarea concreta contradice el objetivo de un wizard reutilizable para cualquier publicación futura. Se mueven a SKILL-01, que las pide cuando hacen falta de verdad |
+| `download` se escribe siempre con el default de LIB-04 (`always_pdf: false`, `image_default_size: w500`), nunca se pregunta | Preguntar y dejar que el usuario elija en el wizard | No son decisiones de una sola vez — quien quiera cambiarlas edita `config.yaml` directamente; preguntarlas en el wizard no las hace más fáciles de cambiar después, solo alarga la instalación |
 
 ## Fuera de scope
 
@@ -151,11 +161,14 @@ Salida final: los tres ficheros de config especificados en LIB-04, cada uno con 
 - Actualización/reinstalación (`d-arxiv wizard --upgrade`) — solo instalación limpia por ahora, aunque `install_engine(force=True)` ya deja la puerta abierta
 - Desinstalación — ticket aparte si se necesita
 - Publicar la release en sí (build del wheel, tag, upload a GitHub Releases) — eso es `SETUP-02`; este ticket solo consume una release ya publicada
+- Registro de publicaciones en `publications.yaml` — se mueve a `SKILL-01` (ver nota de revisión arriba); este wizard no pregunta ni escribe nada al respecto
+- Preguntar la política de descarga (`always_pdf`, `image_default_size`) — se escribe siempre con su default; editar `config.yaml` a mano es el camino soportado para cambiarla
 
 ## Casos de test obligatorios
 
-- `run_wizard(non_interactive_answers={...completo...})` → devuelve dict con todas las keys, escribe los tres ficheros de config
-- `run_wizard(non_interactive_answers={...sin workspace_root...})` → lanza `ValueError` con mensaje indicando el campo requerido ausente
+- `run_wizard(non_interactive_answers={"workspace_root": ...})` (solo ese campo, el resto por default) → devuelve dict con todas las keys, escribe `config.yaml` e `install.yaml`, **no crea `publications.yaml`** (no existe tras la llamada si no existía antes)
+- `run_wizard(non_interactive_answers={})` (sin `workspace_root`) → lanza `ValueError` con mensaje indicando el campo requerido ausente
+- `run_wizard(...)` con `publications.yaml` ya existente de antes (con contenido) → tras correr el wizard, el fichero no cambia ni una línea — el wizard nunca lo toca
 - `check_prerequisites()` con Python 3.9 mockeado → `python_ok: False`
 - `check_prerequisites()` con archive.org inalcanzable (mock de ConnectionError) → `archive_org_ok: False`, no lanza
 - `install_engine()` con mock de "hay una release publicada" → instala desde la URL de esa release, `editable: False`
@@ -171,3 +184,4 @@ Salida final: los tres ficheros de config especificados en LIB-04, cada uno con 
 
 - Propuesto: 2026-09-02
 - Aprobado: 2026-09-02 — supervisor (chat): rediseñado para usuario final sin git — venv fijo en ~/.d-arxiv-1st/venv/, instalación desde release publicada con fallback editable para desarrollo
+- Revisado: 2026-09-03 — supervisor (chat): quitadas las preguntas de publicación y política de descarga del wizard, movidas a SKILL-01. Reimplementación pendiente sobre el código ya mergeado.

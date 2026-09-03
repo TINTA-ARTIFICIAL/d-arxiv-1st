@@ -16,7 +16,7 @@ from datetime import date
 from pathlib import Path
 from typing import TextIO
 
-from lib.config import add_publication, save_config, save_install_state
+from lib.config import save_config, save_install_state
 
 DEFAULT_VENV = Path.home() / ".d-arxiv-1st" / "venv"
 
@@ -31,7 +31,7 @@ _SKILL_NAME = "archive-ingest"
 _SKILL_RELATIVE_PATH = Path("skills") / _SKILL_NAME
 
 _DEFAULT_DOWNLOAD_POLICY = {"always_pdf": False, "image_default_size": "w500"}
-_REQUIRED_ANSWER_FIELDS = ("workspace_root", "publication")
+_REQUIRED_ANSWER_FIELDS = ("workspace_root",)
 
 
 def run_wizard(
@@ -51,17 +51,22 @@ def run_wizard(
     Returns:
         dict con:
             workspace_root (str)
-            publication (dict) — la publicación inicial creada
-            download (dict) — {always_pdf: bool, image_default_size: str}
+            download (dict) — {always_pdf: bool, image_default_size: str},
+                siempre el default (LIB-04) — el wizard no lo pregunta
             install_scope (str) — 'user' | 'project'
             skill_path (str) — ruta absoluta donde se instaló el skill
             venv_path (str) — ruta absoluta del venv (== str(DEFAULT_VENV))
             engine_source (str) — de dónde se instaló el motor (ver install_engine)
             smoke_test_passed (bool)
 
+        No incluye 'publication' — el wizard no crea ninguna publicación ni
+        toca publications.yaml. Eso lo hace SKILL-01 cuando hace falta de
+        verdad (la primera vez que se indexa algo de una publicación nueva).
+
     Raises:
         RuntimeError: si el paso 0 (verificación de Python/conectividad) falla,
             o si install_engine no consigue instalar el motor por ningún camino.
+        ValueError: si non_interactive_answers no incluye 'workspace_root'.
     """
     prerequisites = check_prerequisites()
     if not prerequisites["python_ok"]:
@@ -80,11 +85,9 @@ def run_wizard(
         answers = _prompt_answers(stdin, stdout)
 
     workspace_root = answers["workspace_root"]
-    publication = answers["publication"]
     download = answers["download"]
     install_scope = answers["install_scope"]
 
-    add_publication(Path(workspace_root), publication)
     save_config({"workspace": {"root": workspace_root}, "download": download})
 
     engine_result = install_engine()
@@ -106,7 +109,6 @@ def run_wizard(
 
     result = {
         "workspace_root": workspace_root,
-        "publication": publication,
         "download": download,
         "install_scope": install_scope,
         "skill_path": str(skill_path),
@@ -380,7 +382,6 @@ def _validate_non_interactive_answers(answers: dict) -> dict:
 
     merged = {
         "workspace_root": answers["workspace_root"],
-        "publication": answers["publication"],
         "download": {**_DEFAULT_DOWNLOAD_POLICY, **(answers.get("download") or {})},
         "install_scope": answers.get("install_scope", "user"),
     }
@@ -408,41 +409,6 @@ def _prompt_answers(stdin: TextIO, stdout: TextIO) -> dict:
         default=str(Path.home() / "D-ARXIV-1ST-workspace"),
     )
 
-    stdout.write("-- Publicación inicial --\n")
-    key = _prompt(stdin, stdout, "Identificador corto (key)")
-    label = _prompt(stdin, stdout, "Nombre de la publicación (label)")
-    scope_choice = _prompt(
-        stdin,
-        stdout,
-        "Alcance de ingesta inicial (1=un número suelto, 2=descubrir colección)",
-        default="1",
-    )
-    mode = "discover_collection" if scope_choice.strip() == "2" else "single_item"
-    publication: dict = {"key": key, "label": label, "mode": mode}
-    if mode == "single_item":
-        identifiers_raw = _prompt(
-            stdin, stdout, "Identifier(s) de archive.org (separados por coma)"
-        )
-        publication["archive_identifiers"] = [
-            identifier.strip() for identifier in identifiers_raw.split(",") if identifier.strip()
-        ]
-    else:
-        publication["archive_collection"] = _prompt(
-            stdin, stdout, "Nombre de la colección en archive.org"
-        )
-
-    always_pdf_answer = _prompt(
-        stdin, stdout, "¿Descargar siempre el PDF? (s/N)", default="n"
-    )
-    always_pdf = always_pdf_answer.strip().lower() in ("s", "si", "sí", "y", "yes")
-
-    image_default_size = _prompt(
-        stdin,
-        stdout,
-        "Resolución de imagen por defecto (medium/w500/w1000)",
-        default="w500",
-    )
-
     install_scope = _prompt(
         stdin,
         stdout,
@@ -452,11 +418,7 @@ def _prompt_answers(stdin: TextIO, stdout: TextIO) -> dict:
 
     return {
         "workspace_root": workspace_root,
-        "publication": publication,
-        "download": {
-            "always_pdf": always_pdf,
-            "image_default_size": image_default_size or "w500",
-        },
+        "download": dict(_DEFAULT_DOWNLOAD_POLICY),
         "install_scope": install_scope.strip() or "user",
     }
 
@@ -464,7 +426,6 @@ def _prompt_answers(stdin: TextIO, stdout: TextIO) -> dict:
 def _print_summary(stdout: TextIO, result: dict) -> None:
     stdout.write("\n== Instalación completa ==\n")
     stdout.write(f"Workspace: {result['workspace_root']}\n")
-    stdout.write(f"Publicación: {result['publication'].get('label')!r}\n")
     stdout.write(
         f"Motor instalado en: {result['venv_path']} "
         f"(origen: {result['engine_source']})\n"

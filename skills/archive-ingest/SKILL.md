@@ -101,8 +101,26 @@ no).
    - `publicacion_key`: resuélvela mirando `publications.yaml` del workspace
      con `lib.config.load_publications(Path(workspace))` — busca la
      publicación cuyo `archive_identifiers` incluya este `identifier`. Si no
-     la encuentras, pregunta al usuario qué `publicacion_key` usar; no la
-     inventes.
+     la encuentras, es la primera vez que se trabaja con esta publicación —
+     **regístrala antes de seguir**, no te quedes en una referencia suelta:
+     pregunta al usuario un `key` (slug corto y estable; puedes proponer uno
+     derivado del título del número como sugerencia, pero el usuario decide,
+     no lo inventes tú) y un `label` (nombre legible), y llama
+
+     ```python
+     from lib import config
+     config.add_publication(Path(workspace), {
+         "key": key,
+         "label": label,
+         "mode": "single_item",
+         "archive_identifiers": [identifier],
+     })
+     ```
+
+     antes de continuar con la propuesta de índice. Instalar la herramienta
+     (el wizard) y decidir qué publicación indexar son momentos distintos —
+     el wizard ya no pregunta esto, este es el punto donde de verdad hace
+     falta saberlo.
    - Una lista de artículos candidatos, cada uno con un título propuesto y su
      `body_text` ya recortado (el fragmento correspondiente de `djvu.txt`,
      no todo el texto del número). Numéralos en el orden en que aparecen:
@@ -198,8 +216,11 @@ números que faltan de {publicación}" — publicaciones con
 
    Busca la entrada cuyo `key` coincida con lo que pidió el usuario y cuyo
    `mode` sea `discover_collection`; toma su `archive_collection`. Si no
-   existe tal publicación en `publications.yaml`, dilo al usuario — este
-   flujo no crea publicaciones nuevas (eso es `SETUP-01`/el wizard).
+   existe tal publicación en `publications.yaml`, es la primera vez que se
+   trabaja con esta colección — regístrala igual que en el Flujo 2: pregunta
+   `key`/`label` al usuario y llama `lib.config.add_publication` con
+   `mode: discover_collection` y el `archive_collection` que dé el usuario,
+   antes de continuar.
 2. Llama:
 
    ```python

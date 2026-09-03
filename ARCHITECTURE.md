@@ -185,19 +185,20 @@ publications:
 
 Ejecutable como `d-arxiv wizard` (CLI) o `/d-arxiv-1st:setup` (slash command del plugin, invoca el mismo CLI).
 
+**Revisión 2026-09-03 — el wizard solo pregunta lo que es genuinamente de instalación.** La versión original pedía también la publicación inicial y la política de descarga, acoplando "instalar la herramienta" a "qué voy a indexar hoy". Se simplifica a dos preguntas; el resto se mueve a `SKILL-01` (se pregunta la primera vez que hace falta de verdad, no por adelantado) o se fija con un default sensato sin preguntar.
+
 | Paso | Qué hace | Default |
 |---|---|---|
 | 0 | Verifica Python 3.11+ disponible en el sistema y conectividad a archive.org | — |
 | 1 | Pregunta la ruta del workspace | `~/D-ARXIV-1ST-workspace` |
-| 2 | Pregunta la publicación inicial (identifier suelto o colección) | — |
-| 3 | Pregunta política de descarga de PDF | bajo demanda |
-| 4 | Pregunta resolución por defecto de imágenes | `w500` |
-| 5 | Pregunta alcance de ingesta inicial (un número vs descubrir colección) | un número |
-| 6 | Crea `~/.d-arxiv-1st/venv/` e instala el motor ahí desde una release publicada (§03b) + smoke test contra archive.org | última release de GitHub |
-| 7 | Pregunta ámbito de instalación del skill | usuario (`~/.claude/skills/`) |
-| 8 | Resumen + cómo invocar el skill | — |
+| 2 | Escribe `config.yaml` con la política de descarga (`always_pdf`, `image_default_size`) — sin preguntar | bajo demanda / `w500` |
+| 3 | Crea `~/.d-arxiv-1st/venv/` e instala el motor ahí desde una release publicada (§03b) + smoke test contra archive.org | última release de GitHub |
+| 4 | Pregunta ámbito de instalación del skill | usuario (`~/.claude/skills/`) |
+| 5 | Resumen + cómo invocar el skill | — |
 
-Ver `docs/backlog/ISSUE_SETUP-01_wizard.md` para la especificación completa (interfaces, casos de test) y `docs/backlog/ISSUE_SETUP-02_release_packaging.md` para cómo se publican las releases de las que instala el paso 6.
+El registro de la primera publicación (`key`, `label`, alcance, identifier(s)/colección) ya no es parte del wizard — lo hace `SKILL-01` conversacionalmente la primera vez que se indexa algo de una publicación no registrada todavía.
+
+Ver `docs/backlog/ISSUE_SETUP-01_wizard.md` para la especificación completa (interfaces, casos de test) y `docs/backlog/ISSUE_SETUP-02_release_packaging.md` para cómo se publican las releases de las que instala el paso 3.
 
 ---
 

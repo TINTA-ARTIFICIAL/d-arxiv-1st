@@ -52,13 +52,6 @@ def test_run_wizard_completo_devuelve_dict_y_escribe_config(
 
     answers = {
         "workspace_root": str(workspace_root),
-        "publication": {
-            "key": "coevolution-quarterly",
-            "label": "CoEvolution Quarterly",
-            "mode": "single_item",
-            "archive_identifiers": ["coevolutionquart00unse_15"],
-        },
-        "download": {"always_pdf": True, "image_default_size": "w1000"},
         "install_scope": "project",
         "skill_source_dir": str(skill_source),
     }
@@ -66,8 +59,8 @@ def test_run_wizard_completo_devuelve_dict_y_escribe_config(
     result = setup.run_wizard(non_interactive_answers=answers)
 
     assert result["workspace_root"] == str(workspace_root)
-    assert result["publication"]["key"] == "coevolution-quarterly"
-    assert result["download"] == {"always_pdf": True, "image_default_size": "w1000"}
+    assert "publication" not in result
+    assert result["download"] == {"always_pdf": False, "image_default_size": "w500"}
     assert result["install_scope"] == "project"
     assert result["venv_path"] == "/fake/venv"
     assert result["engine_source"] == "fake-release-url"
@@ -80,7 +73,7 @@ def test_run_wizard_completo_devuelve_dict_y_escribe_config(
     save_config_mock.assert_called_once_with(
         {
             "workspace": {"root": str(workspace_root)},
-            "download": {"always_pdf": True, "image_default_size": "w1000"},
+            "download": {"always_pdf": False, "image_default_size": "w500"},
         }
     )
     save_install_state_mock.assert_called_once()
@@ -89,9 +82,52 @@ def test_run_wizard_completo_devuelve_dict_y_escribe_config(
     assert install_state_call["venv_path"] == "/fake/venv"
     assert install_state_call["engine_source"] == "fake-release-url"
 
-    publications = load_publications(workspace_root)
-    assert len(publications) == 1
-    assert publications[0]["key"] == "coevolution-quarterly"
+    # el wizard no crea publications.yaml — no toca nada de publicaciones
+    assert not (workspace_root / "publications.yaml").exists()
+    assert load_publications(workspace_root) == []
+
+
+def test_run_wizard_no_pisa_publications_yaml_existente(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    workspace_root.mkdir()
+    skill_source = _make_skill_source(tmp_path)
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    monkeypatch.chdir(work_dir)
+
+    from lib.config import add_publication
+
+    add_publication(
+        workspace_root,
+        {
+            "key": "ya-existente",
+            "label": "Ya existente",
+            "mode": "single_item",
+            "archive_identifiers": ["x1"],
+        },
+    )
+    before = (workspace_root / "publications.yaml").read_text(encoding="utf-8")
+
+    monkeypatch.setattr(setup, "_check_archive_org_reachable", lambda: True)
+    monkeypatch.setattr(
+        setup,
+        "install_engine",
+        lambda: {"venv_path": "/fake/venv", "engine_source": "x", "editable": False},
+    )
+    monkeypatch.setattr(setup, "save_config", MagicMock())
+    monkeypatch.setattr(setup, "save_install_state", MagicMock())
+
+    setup.run_wizard(
+        non_interactive_answers={
+            "workspace_root": str(workspace_root),
+            "skill_source_dir": str(skill_source),
+        }
+    )
+
+    after = (workspace_root / "publications.yaml").read_text(encoding="utf-8")
+    assert after == before
 
 
 def test_run_wizard_sin_workspace_root_lanza_valueerror(
@@ -100,16 +136,7 @@ def test_run_wizard_sin_workspace_root_lanza_valueerror(
     monkeypatch.setattr(setup, "_check_archive_org_reachable", lambda: True)
 
     with pytest.raises(ValueError, match="workspace_root"):
-        setup.run_wizard(
-            non_interactive_answers={
-                "publication": {
-                    "key": "x",
-                    "label": "X",
-                    "mode": "single_item",
-                    "archive_identifiers": ["x1"],
-                }
-            }
-        )
+        setup.run_wizard(non_interactive_answers={})
 
 
 # --- check_prerequisites ---
