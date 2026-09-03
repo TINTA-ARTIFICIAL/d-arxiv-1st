@@ -42,10 +42,12 @@ sesión.
    python3 -c "import sys; print('.'.join(map(str, sys.version_info[:3])))"
    ```
 
-   Si la versión es menor que `3.11`, dilo al usuario tal cual y **para
+   Si la versión es menor que `3.10`, dilo al usuario tal cual y **para
    aquí** — no intentes instalar Python, no continúes con el resto del
-   flujo. Instalar Python queda fuera de este skill; se asume ya disponible
-   en el entorno de Cowork.
+   flujo. La versión de Python la fija la VM de la sesión de Cowork
+   (controlada por Anthropic, no por el usuario ni por esta carpeta
+   conectada) — pedirle al usuario que actualice Python en su propio
+   ordenador no tiene ningún efecto aquí, no lo sugieras.
 
 2. **Verificar/instalar dependencias.** `requests` y `pyyaml` deben ser
    importables (el import de `pyyaml` es `yaml`):
@@ -66,6 +68,11 @@ sesión.
    tiene sentido porque ahí no hay una sesión de Cowork aislando ya el
    entorno). Tras instalar, repite la verificación del import para
    confirmar que quedó resuelto antes de seguir.
+
+   Si la sesión corre en la nube (VM efímera, se destruye al terminar la
+   sesión), es normal tener que repetir esta instalación en cada sesión
+   nueva aunque ya la hicieras antes — no es un error, dilo con
+   naturalidad si el usuario pregunta por qué "otra vez".
 
 3. **Preguntar la ruta del workspace.** Asume que el usuario ya conectó a
    esta sesión de Cowork una carpeta para el workspace — una carpeta
