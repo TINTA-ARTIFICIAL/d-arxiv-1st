@@ -4,13 +4,13 @@ title: Servidor MCP local — bridge de red para Cowork/Claude Desktop sobre el 
 type: feature
 subsystem: MCP
 sprint: backlog
-status: IN_PROGRESS
+status: DONE
 priority: P1
 depends_on: [LIB-01, LIB-02, LIB-03, LIB-04]
 blocks: []
 assignee: D-developer
 started: 2026-09-03
-completed: null
+completed: 2026-09-03
 branch: feat/MCP-01-local-bridge-server
 ---
 
@@ -192,3 +192,14 @@ JSON, que no tiene tipo `Path`).
 
 - Propuesto: 2026-09-03
 - Aprobado: 2026-09-03 — supervisor (chat)
+- Revisado: 2026-09-03 — supervisor (chat), tras implementación: gap real
+  detectado y confirmado en validación — la interfaz de `search_collection`
+  fijada arriba incluye `query: str | None`, pero
+  `lib.archive_client.search_collection` (`LIB-01`) no tiene ningún
+  parámetro equivalente. Es un error de este ticket (copiado sin verificar
+  contra la firma real), no del código de `LIB-01`. Resuelto en la
+  implementación manteniendo la firma tal cual está escrita arriba, pero
+  lanzando `NotImplementedError` si se pasa `query` no-`None` — documentado
+  en el docstring de la tool y cubierto por test. Si en el futuro hace falta
+  filtrar `search_collection` por texto de verdad, es un ticket aparte que
+  amplíe `LIB-01`, no algo que `MCP-01` deba resolver por su cuenta.
