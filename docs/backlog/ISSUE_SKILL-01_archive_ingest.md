@@ -4,14 +4,14 @@ title: Skill archive-ingest — flujo conversacional de ingesta e indexado
 type: feature
 subsystem: SKILL
 sprint: backlog
-status: TODO
+status: IN_PROGRESS
 priority: P2
 depends_on: [LIB-01, LIB-02, LIB-03]
 blocks: []
-assignee: null
-started: null
+assignee: D-developer
+started: 2026-09-03
 completed: null
-branch: null
+branch: feat/SKILL-01-archive-ingest
 ---
 
 # SKILL-01 — Skill archive-ingest

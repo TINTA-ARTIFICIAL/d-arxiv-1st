@@ -4,14 +4,14 @@ title: Empaquetado y publicación de releases en GitHub
 type: feature
 subsystem: SETUP
 sprint: backlog
-status: TODO
+status: IN_PROGRESS
 priority: P2
 depends_on: [LIB-01, LIB-02, LIB-03, LIB-04]
 blocks: [PLUGIN-01]
-assignee: null
-started: null
+assignee: D-developer
+started: 2026-09-03
 completed: null
-branch: null
+branch: feat/SETUP-02-release-packaging
 ---
 
 # SETUP-02 — Empaquetado y publicación de releases en GitHub
