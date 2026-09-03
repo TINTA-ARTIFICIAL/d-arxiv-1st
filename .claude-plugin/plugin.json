@@ -1,0 +1,7 @@
+{
+  "name": "d-arxiv-1st",
+  "version": "0.1.0",
+  "description": "Descarga, procesa e indexa publicaciones de Internet Archive para explotación con IA.",
+  "skills": ["skills/archive-ingest"],
+  "commands": ["commands/setup.md"]
+}
