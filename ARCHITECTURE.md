@@ -82,12 +82,15 @@ d-arxiv-1st/
 
 **Este repositorio es para desarrollo, no para instalar.** El público del plugin no son solo desarrolladores — un Productor sin experiencia técnica tiene que poder instalarlo sin `git clone`, sin saber qué es un venv, sin tocar una terminal más allá de pegar un comando o responder al wizard.
 
-Dos caminos, deliberadamente distintos:
+Tres caminos, deliberadamente distintos, para tres públicos distintos:
 
 - **Desarrollador (contribuye a `d-arxiv-1st`)**: clona el repo, `pip install -e .[dev]`, trabaja sobre los tickets de `docs/backlog/`. Flujo de siempre, documentado en `README.md`/`CONTRIBUTING.md`, sin wizard — quien contribuye código ya sabe manejarse con git y pip.
-- **Usuario final (Productor que solo quiere usar el skill)**: instala desde una **release publicada** (ver `SETUP-02`), nunca desde un clon de git. El wizard (`SETUP-01`) crea un entorno autocontenido en `~/.d-arxiv-1st/venv/` — una ruta fija, propiedad del usuario, que no depende de que ningún directorio de repo siga existiendo en ningún sitio. Instalar, mover el plugin de carpeta, o borrar un clon de desarrollo en otra parte de la máquina no rompe nada.
+- **Usuario final de Claude Code CLI**: instala desde una **release publicada** (ver `SETUP-02`), nunca desde un clon de git. El wizard (`SETUP-01`) crea un entorno autocontenido en `~/.d-arxiv-1st/venv/` — una ruta fija, propiedad del usuario, que no depende de que ningún directorio de repo siga existiendo en ningún sitio. Instalar, mover el plugin de carpeta, o borrar un clon de desarrollo en otra parte de la máquina no rompe nada. Requiere `.claude-plugin/plugin.json` + `marketplace.json` (`PLUGIN-01`/`PLUGIN-02`) para poder instalarse vía `/plugin marketplace add` + `/plugin install`.
+- **Usuario final de Cowork** (`SETUP-03`): un público adicional, sin repo, sin terminal, verificado que puede no tener el código como lo tiene un desarrollador — solo una carpeta descargada de una release. No usa venv ni el mecanismo de plugins de Claude Code (no aplica en Cowork) — Cowork ejecuta código nativamente dentro de las carpetas que el usuario conecta a la sesión, así que un skill de setup nativo (`skills/setup-cowork/`) hace las mismas preguntas del wizard pidiendo permiso paso a paso, sin necesidad de aislar nada.
 
-**Decisión:** el venv de instalación vive siempre en `~/.d-arxiv-1st/venv/`, nunca dentro de un checkout de git. **Alternativa descartada:** crear el venv dentro del propio directorio del repo clonado (`{repo}/.venv`), como hace `pip install -e .` en un flujo de desarrollador típico. **Justificación:** un editable install (`-e .`) enlaza el venv al código fuente en su ubicación original — si esa carpeta se mueve o se borra, el venv deja de funcionar en silencio. Para un usuario final eso es inaceptable; para un desarrollador es aceptable (sabe que no debe borrar su propio checkout).
+**Decisión (Claude Code CLI):** el venv de instalación vive siempre en `~/.d-arxiv-1st/venv/`, nunca dentro de un checkout de git. **Alternativa descartada:** crear el venv dentro del propio directorio del repo clonado (`{repo}/.venv`), como hace `pip install -e .` en un flujo de desarrollador típico. **Justificación:** un editable install (`-e .`) enlaza el venv al código fuente en su ubicación original — si esa carpeta se mueve o se borra, el venv deja de funcionar en silencio. Para un usuario final eso es inaceptable; para un desarrollador es aceptable (sabe que no debe borrar su propio checkout).
+
+**Decisión (Cowork):** sin venv, sin plugin/marketplace — ver `SETUP-03` para la justificación completa. No es un reemplazo del camino de Claude Code CLI, es un camino adicional para un producto distinto.
 
 ---
 

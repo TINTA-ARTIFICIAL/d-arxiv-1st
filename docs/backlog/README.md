@@ -17,8 +17,9 @@ Un ticket por pieza de funcionalidad. Ninguno pasa a `IN_PROGRESS` sin estado de
 | [CLI-01](ISSUE_CLI-01_entrypoint.md) | Entry point del CLI d-arxiv (cli/main.py) | P1 | DONE | SETUP-01 |
 | [LIB-05](ISSUE_LIB-05_publication_nesting.md) | Anidar sources/processed por publicación; resolver publicacion_key antes de descargar | P1 | DONE | LIB-02, LIB-03, SKILL-01 |
 | [PLUGIN-02](ISSUE_PLUGIN-02_marketplace.md) | Añadir .claude-plugin/marketplace.json — requisito real para instalar el plugin | P1 | DONE | PLUGIN-01 |
+| [SETUP-03](ISSUE_SETUP-03_cowork_setup_skill.md) | Skill de setup nativo de Cowork — sin terminal, sin repo de desarrollador | P1 | TODO | LIB-04, SKILL-01 |
 
-**10/10 tickets — 81/81 tests pasan.** `CLI-01`, `LIB-05` y `PLUGIN-02` se añadieron después: gaps reales detectados en validación/prueba real, no en el diseño de escritorio — `pyproject.toml` declaraba un entry point sin implementar; `sources/`/`processed/` planos por identifier no distinguían revistas; y `PLUGIN-01` nunca incluyó el `marketplace.json` que la documentación oficial de Claude Code exige para poder instalar el plugin de verdad.
+**10/10 tickets `DONE` — 81/81 tests pasan.** `SETUP-03` es un camino de instalación *adicional*, no un reemplazo: cubre Cowork (sin terminal, usuarios sin el repo como un desarrollador), mientras `SETUP-01`/`PLUGIN-01`/`PLUGIN-02` siguen siendo el camino correcto para Claude Code CLI. `CLI-01`, `LIB-05` y `PLUGIN-02` se añadieron antes por gaps reales detectados en validación/prueba real. `CLI-01`, `LIB-05` y `PLUGIN-02` se añadieron después: gaps reales detectados en validación/prueba real, no en el diseño de escritorio — `pyproject.toml` declaraba un entry point sin implementar; `sources/`/`processed/` planos por identifier no distinguían revistas; y `PLUGIN-01` nunca incluyó el `marketplace.json` que la documentación oficial de Claude Code exige para poder instalar el plugin de verdad.
 
 ## Critical path
 
