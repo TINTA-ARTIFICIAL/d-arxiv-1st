@@ -1,0 +1,13 @@
+{
+  "name": "d-arxiv-marketplace",
+  "owner": {
+    "name": "TINTA-ARTIFICIAL"
+  },
+  "plugins": [
+    {
+      "name": "d-arxiv-1st",
+      "source": "./",
+      "description": "Descarga, procesa e indexa publicaciones de Internet Archive para explotación con IA."
+    }
+  ]
+}
