@@ -4,13 +4,13 @@ title: Añadir .claude-plugin/marketplace.json — requisito real para poder ins
 type: feature
 subsystem: PLUGIN
 sprint: backlog
-status: IN_PROGRESS
+status: DONE
 priority: P1
 depends_on: [PLUGIN-01]
 blocks: []
 assignee: D-developer
 started: 2026-09-03
-completed: null
+completed: 2026-09-03
 branch: feat/PLUGIN-02-marketplace
 ---
 
