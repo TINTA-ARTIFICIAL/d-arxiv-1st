@@ -8,7 +8,14 @@ Sí, de dos formas:
 
 ### A. Vía el comando del plugin — `/d-arxiv-1st:setup`
 
-Es la forma pensada para un usuario final. Requiere que el plugin `d-arxiv-1st` esté dado de alta en Claude Code (añadir su ruta/repo como plugin — mecanismo propio de Claude Code, no verificado paso a paso en esta guía porque no lo hemos ejecutado nosotros mismos; consulta la documentación de plugins de Claude Code para el paso exacto de "añadir plugin local"). Una vez dado de alta, el comando `/d-arxiv-1st:setup` ejecuta `scripts/bootstrap.py` por ti y te va preguntando en el propio chat.
+Es la forma pensada para un usuario final. Requiere dar de alta el plugin `d-arxiv-1st` en Claude Code, vía el marketplace que este mismo repo declara en `.claude-plugin/marketplace.json`:
+
+```
+/plugin marketplace add TINTA-ARTIFICIAL/d-arxiv-1st
+/plugin install d-arxiv-1st@d-arxiv-marketplace
+```
+
+Verifica que quedó instalado con `/plugin list` (si no aparece, prueba `/reload-plugins`). Una vez dado de alta, el comando `/d-arxiv-1st:setup` ejecuta `scripts/bootstrap.py` por ti y te va preguntando en el propio chat.
 
 ### B. Directamente, pidiéndole a Claude que ejecute el script
 
