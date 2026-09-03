@@ -4,13 +4,13 @@ title: Anidar sources/ y processed/ por publicación; resolver publicacion_key a
 type: feature
 subsystem: LIB
 sprint: backlog
-status: IN_PROGRESS
+status: DONE
 priority: P1
 depends_on: [LIB-02, LIB-03, SKILL-01]
 blocks: []
 assignee: D-developer
 started: 2026-09-03
-completed: null
+completed: 2026-09-03
 branch: feat/LIB-05-publication-nesting
 ---
 

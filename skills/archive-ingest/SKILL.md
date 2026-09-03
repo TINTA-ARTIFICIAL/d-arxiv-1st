@@ -63,64 +63,100 @@ o una URL `archive.org/details/{identifier}`.
 
 1. Si el usuario da una URL, extrae el `identifier` del segmento tras
    `/details/`.
-2. Llama:
+2. Resuelve `publicacion_key` **antes de descargar nada** — con el anidado
+   `sources/{publicacion_key}/{identifier}/`, hace falta saber la key para
+   decidir dónde se escribe, así que este es el primer paso, no un paso
+   posterior de indexado:
+
+   ```python
+   from lib import config
+   publicaciones = config.load_publications(Path(workspace))
+   ```
+
+   a. Si alguna publicación tiene este `identifier` en su
+      `archive_identifiers`, usa su `key` directamente — no preguntes nada,
+      es un número ya vinculado.
+   b. Si no, pero el usuario ya dejó claro en la conversación a qué
+      publicación pertenece este número (mencionó su `key` o `label`, o es
+      continuación natural de un intercambio sobre esa publicación),
+      resuélvela contra `publicaciones` por ese `key`/`label` — tampoco
+      preguntes key/label de nuevo, ya existen. Es un número nuevo de una
+      publicación que el workspace ya conoce, así que aplica el patrón
+      **leer-modificar-escribir** sobre `archive_identifiers`: toma la
+      entrada existente de esa publicación, añade `identifier` a su
+      `archive_identifiers` si no está ya, y llama
+      `config.add_publication(Path(workspace), entrada_actualizada)` con el
+      dict **completo** (label, mode y demás campos intactos, no solo el
+      identifier nuevo) — `add_publication` reemplaza la entrada entera por
+      `key`, no fusiona; pasarle solo el identifier nuevo perdería los
+      anteriores.
+   c. Si ninguna publicación conocida encaja (ni por identifier ni por lo
+      que dijo el usuario), es la primera vez que se trabaja con esta
+      publicación — pregúntale un `key` (slug corto y estable; puedes
+      proponer uno como sugerencia, pero el usuario decide, no lo inventes
+      tú) y un `label` (nombre legible), y llama:
+
+      ```python
+      config.add_publication(Path(workspace), {
+          "key": key,
+          "label": label,
+          "mode": "single_item",
+          "archive_identifiers": [identifier],
+      })
+      ```
+
+      Instalar la herramienta (el wizard) y decidir qué publicación traer
+      son momentos distintos — el wizard ya no pregunta esto, este es el
+      punto donde de verdad hace falta saberlo.
+3. Llama:
 
    ```python
    from pathlib import Path
    from lib import downloader
-   result = downloader.fetch_essentials(identifier, Path(workspace))
+   result = downloader.fetch_essentials(identifier, Path(workspace), publicacion_key)
    ```
 
-3. `fetch_essentials` es idempotente por fichero — si ya se había descargado
+4. `fetch_essentials` es idempotente por fichero — si ya se había descargado
    antes, no vuelve a pegar a archive.org, y el resultado es indistinguible
    para el caller. No hace falta preguntar "¿ya lo tienes?"; simplemente
    llama y reporta el resultado.
-4. Confirma al usuario qué se descargó: lista `result["files"]` (las keys
+5. Confirma al usuario qué se descargó: lista `result["files"]` (las keys
    presentes; recuerda que `page_numbers` puede faltar si el item no lo
    ofrece) y la ruta `result["dir"]`.
-5. Si `fetch_essentials` lanza `LookupError`, el identifier no existe en
+6. Si `fetch_essentials` lanza `LookupError`, el identifier no existe en
    archive.org — dilo al usuario tal cual, no reintentes con variaciones
    inventadas del identifier.
+7. Si `fetch_essentials` lanza `ValueError`, ese identifier ya está
+   descargado bajo una `publicacion_key` distinta a la que acabas de
+   resolver — probablemente confundiste de publicación al resolverla en el
+   paso 2. Dile al usuario bajo qué key ya existe (el mensaje del error lo
+   incluye) y confirma con él cuál es la correcta antes de reintentar; no
+   fuerces la descarga con la key equivocada.
 
 Este flujo no propone estructura ni escribe nada en `processed/` — solo puebla
-`sources/{identifier}/`. Indexar es el Flujo 2, un paso aparte.
+`sources/{publicacion_key}/{identifier}/`. Indexar es el Flujo 2, un paso
+aparte.
 
 ## Flujo 2 — Indexar un número
 
 Disparadores: "indexa el número...", "estructura este número en artículos",
 o continuación natural del Flujo 1 cuando el usuario pide seguir.
 
-Requiere que `sources/{identifier}/` ya exista (ejecuta primero el Flujo 1 si
-no).
+Requiere que `sources/{publicacion_key}/{identifier}/` ya exista (ejecuta
+primero el Flujo 1 si no) — y con él, `publicacion_key` ya resuelta. Este
+flujo ya no registra publicaciones nuevas: eso pasó al Flujo 1, porque hace
+falta la key para saber dónde escribir en `sources/` antes incluso de
+descargar. Si por algún motivo llegas aquí sin `publicacion_key` (por
+ejemplo, el usuario pegó un `identifier` directamente pidiendo indexarlo sin
+pasar por el Flujo 1), resuélvela con el mismo procedimiento del paso 2 del
+Flujo 1 antes de seguir.
 
-1. Lee `sources/{identifier}/{identifier}_djvu.txt` (texto OCR, fuente
-   primaria) y, si existe, `sources/{identifier}/{identifier}_toc.xml` (pista
-   de estructura, no confiable por sí sola) con el tool Read.
+1. Lee `sources/{publicacion_key}/{identifier}/{identifier}_djvu.txt` (texto
+   OCR, fuente primaria) y, si existe,
+   `sources/{publicacion_key}/{identifier}/{identifier}_toc.xml` (pista de
+   estructura, no confiable por sí sola) con el tool Read.
 2. A partir de esa lectura, propón — sin escribir nada todavía:
    - `titulo` del número, `fecha`, y si aplica `volumen`/`numero`.
-   - `publicacion_key`: resuélvela mirando `publications.yaml` del workspace
-     con `lib.config.load_publications(Path(workspace))` — busca la
-     publicación cuyo `archive_identifiers` incluya este `identifier`. Si no
-     la encuentras, es la primera vez que se trabaja con esta publicación —
-     **regístrala antes de seguir**, no te quedes en una referencia suelta:
-     pregunta al usuario un `key` (slug corto y estable; puedes proponer uno
-     derivado del título del número como sugerencia, pero el usuario decide,
-     no lo inventes tú) y un `label` (nombre legible), y llama
-
-     ```python
-     from lib import config
-     config.add_publication(Path(workspace), {
-         "key": key,
-         "label": label,
-         "mode": "single_item",
-         "archive_identifiers": [identifier],
-     })
-     ```
-
-     antes de continuar con la propuesta de índice. Instalar la herramienta
-     (el wizard) y decidir qué publicación indexar son momentos distintos —
-     el wizard ya no pregunta esto, este es el punto donde de verdad hace
-     falta saberlo.
    - Una lista de artículos candidatos, cada uno con un título propuesto y su
      `body_text` ya recortado (el fragmento correspondiente de `djvu.txt`,
      no todo el texto del número). Numéralos en el orden en que aparecen:
@@ -142,10 +178,10 @@ no).
    result = processor.write_processed(
        identifier,
        Path(workspace),
+       publicacion_key,
        {
            "titulo": titulo,
            "fecha": fecha,
-           "publicacion_key": publicacion_key,
            "volumen": volumen,       # opcional, o no incluir la key
            "numero": numero,         # opcional, o no incluir la key
            "articulos": articulos,   # cada uno con article_id, titulo,
@@ -157,13 +193,15 @@ no).
 5. `write_processed` hace upsert por `article_id` sobre el número ya
    procesado: si el usuario ya confirmó algunos artículos en una llamada
    anterior y ahora quiere añadir más, basta con pasar los artículos nuevos
-   en `articulos` — no repitas los ya escritos. `titulo`/`fecha`/
-   `publicacion_key` solo son obligatorios en la primera llamada para un
-   identifier; en llamadas posteriores puedes omitirlos si no cambian (se
-   conserva lo ya guardado).
-6. Si `write_processed` lanza `ValueError` (falta un campo requerido, o un
-   `article_id` no cumple el patrón), corrige la propuesta y repite — no
-   ocultes el error al usuario.
+   en `articulos` — no repitas los ya escritos. `titulo`/`fecha` solo son
+   obligatorios en la primera llamada para un identifier; en llamadas
+   posteriores puedes omitirlos si no cambian (se conserva lo ya guardado).
+   `publicacion_key` sí es obligatoria en todas las llamadas, siempre la
+   misma para este identifier.
+6. Si `write_processed` lanza `ValueError` (falta un campo requerido, un
+   `article_id` no cumple el patrón, o la `publicacion_key` pasada no
+   coincide con la ya usada para este identifier), corrige la propuesta y
+   repite — no ocultes el error al usuario.
 7. Confirma el resultado: `result["index_path"]` y `result["article_paths"]`
    son los ficheros escritos o actualizados en esta llamada.
 
@@ -174,10 +212,11 @@ Disparadores: el usuario pide explícitamente una página impresa concreta
 Bateson"). **Nunca se dispara solo porque se está indexando un número** (regla
 2 de arriba) — si el usuario no lo pide, no se descarga ninguna imagen.
 
-1. Necesita `sources/{identifier}/{identifier}_page_numbers.json`, que ya
-   debería existir si se corrió el Flujo 1 antes (es parte de
-   `fetch_essentials`). Si no existe para este item, dilo al usuario: este
-   número no tiene mapa de páginas impresas en archive.org.
+1. Necesita `sources/{publicacion_key}/{identifier}/{identifier}_page_numbers.json`,
+   que ya debería existir si se corrió el Flujo 1 antes (es parte de
+   `fetch_essentials`) — reutiliza la `publicacion_key` ya resuelta en ese
+   flujo, no vuelvas a preguntarla. Si no existe para este item, dilo al
+   usuario: este número no tiene mapa de páginas impresas en archive.org.
 2. Llama directamente con el número de página impreso tal y como lo dio el
    usuario (la resolución a `leaf` interno la hace `fetch_page_image`
    internamente, usando `resolve_leaf` sobre `page_numbers.json`):
@@ -186,7 +225,7 @@ Bateson"). **Nunca se dispara solo porque se está indexando un número** (regla
    from pathlib import Path
    from lib import downloader
    path = downloader.fetch_page_image(
-       identifier, Path(workspace), printed_page="16"
+       identifier, Path(workspace), publicacion_key, printed_page="16"
    )
    ```
 
@@ -215,12 +254,13 @@ números que faltan de {publicación}" — publicaciones con
    ```
 
    Busca la entrada cuyo `key` coincida con lo que pidió el usuario y cuyo
-   `mode` sea `discover_collection`; toma su `archive_collection`. Si no
-   existe tal publicación en `publications.yaml`, es la primera vez que se
-   trabaja con esta colección — regístrala igual que en el Flujo 2: pregunta
-   `key`/`label` al usuario y llama `lib.config.add_publication` con
-   `mode: discover_collection` y el `archive_collection` que dé el usuario,
-   antes de continuar.
+   `mode` sea `discover_collection`; toma su `key` (esta es la
+   `publicacion_key` para todo lo que sigue) y su `archive_collection`. Si
+   no existe tal publicación en `publications.yaml`, es la primera vez que
+   se trabaja con esta colección — regístrala igual que en el Flujo 1:
+   pregunta `key`/`label` al usuario y llama `lib.config.add_publication`
+   con `mode: discover_collection` y el `archive_collection` que dé el
+   usuario, antes de continuar.
 2. Llama:
 
    ```python
@@ -231,9 +271,14 @@ números que faltan de {publicación}" — publicaciones con
 3. **No descargues nada todavía.** Lista los candidatos al usuario (identifier,
    título, fecha, volumen/número — los campos que devuelva `search_collection`)
    y espera a que confirme explícitamente cuáles quiere ingerir.
-4. Solo para los identifiers que el usuario confirme, ejecuta el Flujo 1
-   (`fetch_essentials`) uno por uno, y opcionalmente encadena el Flujo 2 si
-   también pide indexarlos.
+4. Solo para los identifiers que el usuario confirme, llama
+   `fetch_essentials(identifier, Path(workspace), publicacion_key)` uno por
+   uno con la `publicacion_key` ya resuelta en el paso 1 (no repitas la
+   resolución del Flujo 1 — aquí ya se sabe), y opcionalmente encadena el
+   Flujo 2 si también pide indexarlos. Tras cada descarga nueva, aplica el
+   mismo patrón leer-modificar-escribir del Flujo 1 sobre
+   `archive_identifiers` de esta publicación, para que quede constancia de
+   qué identifiers se han traído.
 
 ## Fuera de alcance de este skill
 

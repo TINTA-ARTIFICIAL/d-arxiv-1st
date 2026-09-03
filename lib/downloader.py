@@ -1,4 +1,4 @@
-"""Orquesta lib.archive_client para poblar sources/{identifier}/ en el workspace.
+"""Orquesta lib.archive_client para poblar sources/{publicacion_key}/{identifier}/.
 
 Ticket: LIB-02
 """
@@ -20,36 +20,40 @@ _ESSENTIAL_DOWNLOADS = (
 )
 
 
-def fetch_essentials(identifier: str, workspace: Path, force: bool = False) -> dict:
-    """Descarga el material esencial de un item a sources/{identifier}/.
+def fetch_essentials(
+    identifier: str, workspace: Path, publicacion_key: str, force: bool = False
+) -> dict:
+    """Descarga el material esencial de un item a
+    sources/{publicacion_key}/{identifier}/. Mismo comportamiento que antes
+    (idempotente por fichero, omite ficheros ausentes sin error) — el único
+    cambio es la ruta de destino, que ahora incluye publicacion_key.
 
-    Descarga siempre: metadata.json (serializado desde get_metadata),
-    {identifier}_djvu.txt, {identifier}_toc.xml, {identifier}_page_numbers.json.
-    Si algún fichero no existe para este item (p.ej. no todos los items
-    tienen page_numbers.json), se omite sin error — ver 'Decisiones'.
-
-    Idempotente por fichero: si un fichero ya existe en disco y force=False,
-    no se vuelve a pegar a archive.org para él — se devuelve su ruta tal
-    cual. La decisión es por fichero, no por identifier completo: si
-    djvu.txt ya existe pero toc.xml no, solo se descarga toc.xml.
+    Antes de escribir nada, busca 'identifier' bajo CUALQUIER publicacion_key
+    ya existente (glob sources/*/{identifier}, no solo la ruta que implica
+    la publicacion_key pasada — ver nota en Contexto sobre por qué la
+    comprobación ingenua no sirve). Si aparece bajo una key distinta a la
+    pasada, lanza ValueError sin descargar nada.
 
     Args:
         identifier: identificador del item en archive.org.
         workspace: ruta raíz del workspace local.
+        publicacion_key: 'key' de la publicación en publications.yaml a la
+            que pertenece este identifier. No se valida contra
+            publications.yaml en esta función — es responsabilidad del
+            caller (SKILL-01) haberla resuelto o registrado antes de llamar.
         force: si True, re-descarga y sobreescribe aunque el fichero ya exista.
 
     Returns:
-        dict {"identifier": str, "dir": str, "files": {nombre_lógico: ruta_absoluta}}
-        — nombre_lógico ∈ {"metadata", "djvu_text", "toc", "page_numbers"};
-        una key está ausente si el fichero correspondiente no existía en el item.
-        No distingue en el resultado si un fichero se descargó ahora o ya
-        existía — a efectos del caller, el resultado es el mismo.
+        Igual que antes, con "dir" apuntando a la nueva ruta anidada.
 
     Raises:
-        LookupError: si 'identifier' no existe en archive.org.
-        OSError: si no se puede escribir en el workspace.
+        ValueError: si 'identifier' ya existe en sources/ bajo una
+            publicacion_key distinta a la pasada.
+        LookupError, OSError: igual que antes.
     """
-    sources_dir = _sources_dir(workspace, identifier)
+    workspace = Path(workspace)
+    _check_publicacion_key(workspace, identifier, publicacion_key)
+    sources_dir = _sources_dir(workspace, publicacion_key, identifier)
     files: dict[str, Path] = {}
 
     metadata_path = sources_dir / "metadata.json"
@@ -78,24 +82,35 @@ def fetch_essentials(identifier: str, workspace: Path, force: bool = False) -> d
     }
 
 
-def fetch_pdf(identifier: str, workspace: Path, force: bool = False) -> Path:
-    """Descarga el PDF completo del item — llamada explícita, no automática.
+def fetch_pdf(
+    identifier: str, workspace: Path, publicacion_key: str, force: bool = False
+) -> Path:
+    """Igual que antes; destino ahora
+    sources/{publicacion_key}/{identifier}/{identifier}.pdf. Misma
+    comprobación de publicacion_key distinta que fetch_essentials — lanza
+    ValueError, no descarga bajo una key equivocada.
 
-    Idempotente: si sources/{identifier}/{identifier}.pdf ya existe y
-    force=False, devuelve su ruta sin volver a descargar.
+    Idempotente: si sources/{publicacion_key}/{identifier}/{identifier}.pdf
+    ya existe y force=False, devuelve su ruta sin volver a descargar.
 
     Args:
         identifier: identificador del item.
         workspace: ruta raíz del workspace local.
+        publicacion_key: 'key' de la publicación en publications.yaml a la
+            que pertenece este identifier.
         force: si True, re-descarga y sobreescribe aunque ya exista.
 
     Returns:
-        Path absoluto de sources/{identifier}/{identifier}.pdf.
+        Path absoluto de sources/{publicacion_key}/{identifier}/{identifier}.pdf.
 
     Raises:
+        ValueError: si 'identifier' ya existe en sources/ bajo una
+            publicacion_key distinta a la pasada.
         LookupError: si el item no tiene un fichero de formato 'Text PDF' o 'PDF'.
     """
-    dest = _sources_dir(workspace, identifier) / f"{identifier}.pdf"
+    workspace = Path(workspace)
+    _check_publicacion_key(workspace, identifier, publicacion_key)
+    dest = _sources_dir(workspace, publicacion_key, identifier) / f"{identifier}.pdf"
     if not force and dest.exists():
         return dest.resolve()
 
@@ -106,19 +121,22 @@ def fetch_pdf(identifier: str, workspace: Path, force: bool = False) -> Path:
 def fetch_page_image(
     identifier: str,
     workspace: Path,
+    publicacion_key: str,
     printed_page: str | None = None,
     leaf: int | None = None,
     size: str = "w500",
     force: bool = False,
 ) -> Path:
-    """Descarga la imagen de una página suelta, bajo demanda.
+    """Igual que antes; destino ahora
+    sources/{publicacion_key}/{identifier}/images/leaf-{leaf}_{size}.jpg.
+    Misma comprobación de publicacion_key distinta que fetch_essentials.
 
     Exactamente uno de 'printed_page' o 'leaf' debe pasarse. Si se pasa
     'printed_page', se resuelve a 'leaf' usando page_numbers.json (debe
     haberse descargado antes con fetch_essentials).
 
-    Idempotente: si sources/{identifier}/images/leaf-{leaf}_{size}.jpg ya
-    existe y force=False, devuelve su ruta sin volver a descargar. El
+    Idempotente: si sources/{publicacion_key}/{identifier}/images/leaf-{leaf}_{size}.jpg
+    ya existe y force=False, devuelve su ruta sin volver a descargar. El
     tamaño forma parte del nombre de fichero precisamente para que la
     idempotencia sea correcta — dos tamaños de la misma página son
     ficheros distintos, no una sobreescritura silenciosa (ver 'Decisiones').
@@ -126,6 +144,8 @@ def fetch_page_image(
     Args:
         identifier: identificador del item.
         workspace: ruta raíz del workspace local.
+        publicacion_key: 'key' de la publicación en publications.yaml a la
+            que pertenece este identifier.
         printed_page: número de página impresa tal y como aparece en la
             revista (ej: "22"). Mutuamente excluyente con 'leaf'.
         leaf: índice interno de página de archive.org. Mutuamente excluyente
@@ -134,11 +154,12 @@ def fetch_page_image(
         force: si True, re-descarga y sobreescribe aunque ya exista.
 
     Returns:
-        Path absoluto de sources/{identifier}/images/leaf-{leaf}_{size}.jpg.
+        Path absoluto de sources/{publicacion_key}/{identifier}/images/leaf-{leaf}_{size}.jpg.
 
     Raises:
         ValueError: si no se pasa ni 'printed_page' ni 'leaf', o se pasan ambos,
-            o 'size' no es uno de los valores válidos.
+            o 'size' no es uno de los valores válidos, o 'identifier' ya
+            existe en sources/ bajo una publicacion_key distinta a la pasada.
         FileNotFoundError: si 'printed_page' se pasa pero page_numbers.json no
             se ha descargado todavía para este identifier.
         LookupError: si 'printed_page' no se encuentra en page_numbers.json.
@@ -153,7 +174,9 @@ def fetch_page_image(
             f"size inválido: {size!r} — debe ser uno de {_VALID_IMAGE_SIZES!r}"
         )
 
-    sources_dir = _sources_dir(workspace, identifier)
+    workspace = Path(workspace)
+    _check_publicacion_key(workspace, identifier, publicacion_key)
+    sources_dir = _sources_dir(workspace, publicacion_key, identifier)
 
     if printed_page is not None:
         leaf = _resolve_leaf_from_disk(sources_dir, identifier, printed_page)
@@ -192,8 +215,25 @@ def resolve_leaf(page_numbers: list[dict], printed_page: str) -> int:
 # --- helpers internos ---
 
 
-def _sources_dir(workspace: Path, identifier: str) -> Path:
-    return Path(workspace) / "sources" / identifier
+def _sources_dir(workspace: Path, publicacion_key: str, identifier: str) -> Path:
+    return Path(workspace) / "sources" / publicacion_key / identifier
+
+
+def _check_publicacion_key(workspace: Path, identifier: str, publicacion_key: str) -> None:
+    existing_key = _find_existing_publicacion_key(workspace, identifier)
+    if existing_key is not None and existing_key != publicacion_key:
+        raise ValueError(
+            f"identifier {identifier!r} ya existe en sources/ bajo "
+            f"publicacion_key {existing_key!r}, no se puede usar "
+            f"publicacion_key {publicacion_key!r}"
+        )
+
+
+def _find_existing_publicacion_key(workspace: Path, identifier: str) -> str | None:
+    matches = sorted(Path(workspace).glob(f"sources/*/{identifier}"))
+    if not matches:
+        return None
+    return matches[0].parent.name
 
 
 def _write_json(path: Path, data: dict) -> None:
