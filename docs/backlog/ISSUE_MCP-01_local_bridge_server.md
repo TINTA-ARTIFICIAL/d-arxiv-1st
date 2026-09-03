@@ -4,14 +4,14 @@ title: Servidor MCP local — bridge de red para Cowork/Claude Desktop sobre el 
 type: feature
 subsystem: MCP
 sprint: backlog
-status: TODO
+status: IN_PROGRESS
 priority: P1
 depends_on: [LIB-01, LIB-02, LIB-03, LIB-04]
 blocks: []
-assignee: null
-started: null
+assignee: D-developer
+started: 2026-09-03
 completed: null
-branch: null
+branch: feat/MCP-01-local-bridge-server
 ---
 
 # MCP-01 — Servidor MCP local (bridge de red)
