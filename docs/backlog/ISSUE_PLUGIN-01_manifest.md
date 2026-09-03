@@ -4,14 +4,14 @@ title: Manifiesto del plugin, script de arranque y slash command de setup
 type: feature
 subsystem: PLUGIN
 sprint: backlog
-status: TODO
+status: IN_PROGRESS
 priority: P2
 depends_on: [SETUP-01, SETUP-02]
 blocks: []
-assignee: null
-started: null
+assignee: D-developer
+started: 2026-09-03
 completed: null
-branch: null
+branch: feat/PLUGIN-01-manifest
 ---
 
 # PLUGIN-01 — Manifiesto del plugin, script de arranque y slash command de setup
