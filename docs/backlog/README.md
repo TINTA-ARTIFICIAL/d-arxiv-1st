@@ -17,9 +17,9 @@ Un ticket por pieza de funcionalidad. Ninguno pasa a `IN_PROGRESS` sin estado de
 | [CLI-01](ISSUE_CLI-01_entrypoint.md) | Entry point del CLI d-arxiv (cli/main.py) | P1 | DONE | SETUP-01 |
 | [LIB-05](ISSUE_LIB-05_publication_nesting.md) | Anidar sources/processed por publicación; resolver publicacion_key antes de descargar | P1 | DONE | LIB-02, LIB-03, SKILL-01 |
 | [PLUGIN-02](ISSUE_PLUGIN-02_marketplace.md) | Añadir .claude-plugin/marketplace.json — requisito real para instalar el plugin | P1 | DONE | PLUGIN-01 |
-| [SETUP-03](ISSUE_SETUP-03_cowork_setup_skill.md) | Skill de setup nativo de Cowork — sin terminal, sin repo de desarrollador | P1 | IN_PROGRESS | LIB-04, SKILL-01 |
+| [SETUP-03](ISSUE_SETUP-03_cowork_setup_skill.md) | Skill de setup nativo de Cowork — sin terminal, sin repo de desarrollador | P1 | DONE | LIB-04, SKILL-01 |
 
-**11 tickets, 10 `DONE` — 81/81 tests pasan.** `SETUP-03` es un camino de instalación *adicional*, no un reemplazo: cubre Cowork (sin terminal, usuarios sin el repo como un desarrollador), mientras `SETUP-01`/`PLUGIN-01`/`PLUGIN-02` siguen siendo el camino correcto para Claude Code CLI. `CLI-01`, `LIB-05` y `PLUGIN-02` se añadieron después del backlog original: gaps reales detectados en validación/prueba real, no en el diseño de escritorio — `pyproject.toml` declaraba un entry point sin implementar; `sources/`/`processed/` planos por identifier no distinguían revistas; y `PLUGIN-01` nunca incluyó el `marketplace.json` que la documentación oficial de Claude Code exige para poder instalar el plugin de verdad.
+**11/11 tickets `DONE` — 81/81 tests pasan.** `SETUP-03` es un camino de instalación *adicional*, no un reemplazo: cubre Cowork (sin terminal, usuarios sin el repo como un desarrollador), mientras `SETUP-01`/`PLUGIN-01`/`PLUGIN-02` siguen siendo el camino correcto para Claude Code CLI. `CLI-01`, `LIB-05` y `PLUGIN-02` se añadieron después del backlog original: gaps reales detectados en validación/prueba real, no en el diseño de escritorio — `pyproject.toml` declaraba un entry point sin implementar; `sources/`/`processed/` planos por identifier no distinguían revistas; y `PLUGIN-01` nunca incluyó el `marketplace.json` que la documentación oficial de Claude Code exige para poder instalar el plugin de verdad.
 
 ## Critical path
 
@@ -34,7 +34,7 @@ LIB-04 ─┘        └──→ SETUP-01 ─┬─→ PLUGIN-01
 
 `LIB-01` y `LIB-04` no dependen de nada — son el punto de partida y pueden implementarse en paralelo. `LIB-02` es el cuello de botella: hasta que no descarga a disco, nada más tiene con qué trabajar.
 
-**Dos públicos, dos caminos de instalación** (ver `ARCHITECTURE.md` §03b): quien desarrolla `d-arxiv-1st` clona el repo y usa `pip install -e .[dev]` directamente, sin wizard. `SETUP-01`/`SETUP-02`/`PLUGIN-01` son exclusivamente para el usuario final que instala el plugin sin git — `SETUP-01` tiene un fallback editable para poder implementarse y testearse antes de que exista la primera release de `SETUP-02`, pero el camino *por defecto* para un usuario final depende de que SETUP-02 haya publicado al menos una vez.
+**Tres públicos, tres caminos de instalación** (ver `ARCHITECTURE.md` §03b): quien desarrolla `d-arxiv-1st` clona el repo y usa `pip install -e .[dev]` directamente, sin wizard. `SETUP-01`/`SETUP-02`/`PLUGIN-01`/`PLUGIN-02` son para el usuario final de Claude Code CLI — `SETUP-01` tiene un fallback editable para poder implementarse y testearse antes de que exista la primera release de `SETUP-02`, pero el camino *por defecto* depende de que SETUP-02 haya publicado al menos una vez (ya publicada: `v0.1.0`). `SETUP-03` es el tercer camino, para Cowork — sin venv, sin plugin de Claude Code, sin necesitar el repo como un desarrollador.
 
 ## Fuera de scope de este backlog (Fase 2 / Fase 3)
 

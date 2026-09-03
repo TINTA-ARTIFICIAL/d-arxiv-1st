@@ -4,13 +4,13 @@ title: Skill de setup nativo de Cowork — instalación sin terminal para usuari
 type: feature
 subsystem: SETUP
 sprint: backlog
-status: IN_PROGRESS
+status: DONE
 priority: P1
 depends_on: [LIB-04, SKILL-01]
 blocks: []
 assignee: D-developer
 started: 2026-09-03
-completed: null
+completed: 2026-09-03
 branch: feat/SETUP-03-cowork-setup-skill
 ---
 
