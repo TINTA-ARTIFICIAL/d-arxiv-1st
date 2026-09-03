@@ -14,7 +14,7 @@ Un ticket por pieza de funcionalidad. Ninguno pasa a `IN_PROGRESS` sin estado de
 | [SETUP-02](ISSUE_SETUP-02_release_packaging.md) | Empaquetado y publicación de releases en GitHub | P2 | DONE | LIB-01, LIB-02, LIB-03, LIB-04 |
 | [PLUGIN-01](ISSUE_PLUGIN-01_manifest.md) | Manifiesto del plugin, script de arranque y slash command de setup | P2 | DONE | SETUP-01, SETUP-02 |
 | [SKILL-01](ISSUE_SKILL-01_archive_ingest.md) | Skill archive-ingest | P2 | DONE | LIB-01, LIB-02, LIB-03 |
-| [CLI-01](ISSUE_CLI-01_entrypoint.md) | Entry point del CLI d-arxiv (cli/main.py) | P1 | TODO | SETUP-01 |
+| [CLI-01](ISSUE_CLI-01_entrypoint.md) | Entry point del CLI d-arxiv (cli/main.py) | P1 | IN_PROGRESS | SETUP-01 |
 
 **Backlog original (8 tickets) completo — 62/62 tests pasan.** `CLI-01` se añadió después: gap real detectado en validación (`pyproject.toml` declara el entry point `d-arxiv` pero ningún ticket original implementaba `cli/main.py` — el motor está completo pero no conectado al comando real).
 

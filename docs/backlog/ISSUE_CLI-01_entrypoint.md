@@ -4,14 +4,14 @@ title: Entry point del CLI d-arxiv (cli/main.py)
 type: feature
 subsystem: CLI
 sprint: backlog
-status: TODO
+status: IN_PROGRESS
 priority: P1
 depends_on: [SETUP-01]
 blocks: []
-assignee: null
-started: null
+assignee: D-developer
+started: 2026-09-03
 completed: null
-branch: null
+branch: feat/CLI-01-entrypoint
 ---
 
 # CLI-01 — Entry point del CLI d-arxiv
