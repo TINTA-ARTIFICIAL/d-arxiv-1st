@@ -64,6 +64,8 @@ N/A — este ticket no persiste nada propio, es la capa de invocación sobre `li
 | Alcance mínimo: solo `wizard` | Implementar también `fetch`/`process`/`discover` en el mismo ticket, como sugiere el diagrama de `ARCHITECTURE.md` §01 | Son las únicas piezas que bloquean el flujo real de usuario final (`bootstrap.py` → `d-arxiv wizard`); añadir subcomandos sin ticket propio que los especifique con su propio contrato repite el problema que causó este gap |
 | Excepciones capturadas en `main()`, nunca traceback crudo al usuario | Dejar que la excepción se propague tal cual | `bootstrap.py` y el usuario final ejecutan esto sin contexto de desarrollo — un traceback de Python no es una salida de error aceptable para ese público |
 | `main(argv=None)` acepta argv inyectable | Leer `sys.argv` directamente dentro de la función | Testeable sin mockear `sys.argv` globalmente |
+| `main()` captura el `SystemExit` que `argparse.parse_args()` lanza por defecto ante argv inválido, y devuelve su código como int en vez de dejar que mate el proceso | Dejar que `SystemExit` se propague sin capturar | El contrato dice que `main()` devuelve un int siempre — un test que llama `main(["no-existe"])` esperando `2` como valor de retorno fallaría (o mataría el proceso de test) si `SystemExit` no se captura explícitamente |
+| `main()` captura `Exception` de forma específica alrededor de la llamada al subcomando, nunca `KeyboardInterrupt` ni el `SystemExit` ya mencionado de argparse | `except:` desnudo o `except BaseException` | Un `Ctrl+C` del usuario real durante el wizard debe interrumpir el proceso de verdad, no reportarse como "error del subcomando" con código 1 |
 
 ## Fuera de scope
 
@@ -75,11 +77,12 @@ N/A — este ticket no persiste nada propio, es la capa de invocación sobre `li
 
 - `main(["wizard"])` con `lib.setup.run_wizard` mockeado devolviendo éxito → `0`
 - `main(["wizard"])` con `run_wizard` mockeado lanzando `RuntimeError("x")` → devuelve `1`, imprime "x" a stderr, sin traceback
-- `main(["no-existe"])` → devuelve `2` (comportamiento de argparse ante subcomando desconocido)
+- `main(["no-existe"])` → devuelve `2`, no lanza `SystemExit` ni mata el proceso de test (comportamiento de argparse capturado, no propagado)
 - `main([])` sin subcomando → devuelve `2` con mensaje de uso, no lanza excepción
+- `main(["wizard"])` con `run_wizard` mockeado lanzando `KeyboardInterrupt` → la excepción se propaga (no se captura como error del subcomando, no devuelve `1`)
 - Instalación real (smoke test manual, no pytest): tras `pip install .` en un venv limpio, `d-arxiv wizard` se ejecuta sin `ModuleNotFoundError`
 
 ## Estado de revisión
 
 - Propuesto: 2026-09-03
-- Aprobado: PENDIENTE
+- Aprobado: 2026-09-03 — supervisor (chat): precisado el manejo de SystemExit/KeyboardInterrupt en main()
