@@ -16,7 +16,7 @@ Un ticket por pieza de funcionalidad. Ninguno pasa a `IN_PROGRESS` sin estado de
 | [SKILL-01](ISSUE_SKILL-01_archive_ingest.md) | Skill archive-ingest | P2 | DONE | LIB-01, LIB-02, LIB-03 |
 | [CLI-01](ISSUE_CLI-01_entrypoint.md) | Entry point del CLI d-arxiv (cli/main.py) | P1 | DONE | SETUP-01 |
 | [LIB-05](ISSUE_LIB-05_publication_nesting.md) | Anidar sources/processed por publicación; resolver publicacion_key antes de descargar | P1 | DONE | LIB-02, LIB-03, SKILL-01 |
-| [PLUGIN-02](ISSUE_PLUGIN-02_marketplace.md) | Añadir .claude-plugin/marketplace.json — requisito real para instalar el plugin | P1 | TODO | PLUGIN-01 |
+| [PLUGIN-02](ISSUE_PLUGIN-02_marketplace.md) | Añadir .claude-plugin/marketplace.json — requisito real para instalar el plugin | P1 | IN_PROGRESS | PLUGIN-01 |
 
 **9/9 tickets originales `DONE` — 78/78 tests pasan.** `CLI-01`, `LIB-05` y `PLUGIN-02` se añadieron después: gaps reales detectados en validación/prueba real, no en el diseño de escritorio — `pyproject.toml` declaraba un entry point sin implementar; `sources/`/`processed/` planos por identifier no distinguían revistas; y `PLUGIN-01` nunca incluyó el `marketplace.json` que la documentación oficial de Claude Code exige para poder instalar el plugin de verdad.
 
