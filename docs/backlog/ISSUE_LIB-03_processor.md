@@ -4,14 +4,14 @@ title: Persistir estructura indexada como Markdown procesado
 type: feature
 subsystem: LIB
 sprint: backlog
-status: TODO
+status: IN_PROGRESS
 priority: P1
 depends_on: [LIB-02]
 blocks: [SETUP-02, SKILL-01]
-assignee: null
-started: null
+assignee: D-developer
+started: 2026-09-03
 completed: null
-branch: null
+branch: feat/LIB-03-processor
 ---
 
 # LIB-03 — Persistir estructura indexada como Markdown procesado

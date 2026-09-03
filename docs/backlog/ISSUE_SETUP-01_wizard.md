@@ -4,14 +4,14 @@ title: Wizard de instalación (d-arxiv wizard / /d-arxiv-1st:setup)
 type: feature
 subsystem: SETUP
 sprint: backlog
-status: TODO
+status: IN_PROGRESS
 priority: P1
 depends_on: [LIB-01, LIB-02, LIB-04]
 blocks: [PLUGIN-01]
-assignee: null
-started: null
+assignee: D-developer
+started: 2026-09-03
 completed: null
-branch: null
+branch: feat/SETUP-01-wizard
 ---
 
 # SETUP-01 — Wizard de instalación
