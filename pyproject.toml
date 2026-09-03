@@ -30,6 +30,7 @@ include = ["lib*", "cli*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not integration'"
 markers = [
   "integration: hits the real archive.org API (network required)",
 ]
