@@ -81,4 +81,4 @@ N/A — es el propio artefacto de arriba, no hay otra estructura que persistir.
 ## Estado de revisión
 
 - Propuesto: 2026-09-03
-- Aprobado: PENDIENTE
+- Aprobado: 2026-09-03 — supervisor (chat)
