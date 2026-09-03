@@ -4,14 +4,14 @@ title: Descarga de material esencial y bajo demanda al workspace
 type: feature
 subsystem: LIB
 sprint: backlog
-status: TODO
+status: IN_PROGRESS
 priority: P1
 depends_on: [LIB-01, LIB-04]
 blocks: [LIB-03, SETUP-01, SETUP-02, SKILL-01]
-assignee: null
-started: null
+assignee: D-developer
+started: 2026-09-03
 completed: null
-branch: null
+branch: feat/LIB-02-downloader
 ---
 
 # LIB-02 — Descarga de material esencial y bajo demanda al workspace
