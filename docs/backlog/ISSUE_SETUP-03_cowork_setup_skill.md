@@ -69,4 +69,4 @@ Este ticket produce un `SKILL.md` (prompt/instrucciones), no código Python ejec
 ## Estado de revisión
 
 - Propuesto: 2026-09-03
-- Aprobado: PENDIENTE
+- Aprobado: 2026-09-03 — supervisor (chat)
