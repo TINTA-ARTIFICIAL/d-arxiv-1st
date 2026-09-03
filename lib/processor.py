@@ -1,4 +1,5 @@
-"""Persiste processed/{identifier}/ (index.md + articles/*.md) y catalog_index.yaml.
+"""Persiste processed/{publicacion_key}/{identifier}/ (index.md + articles/*.md)
+y catalog_index.yaml.
 
 Ticket: LIB-03
 """
@@ -16,11 +17,22 @@ CATALOG_FILENAME = "catalog_index.yaml"
 _FRONT_MATTER_PATTERN = re.compile(r"^---\n(.*?)\n---\n\n(.*)$", re.DOTALL)
 _INDEX_ARTICLE_FIELDS = ("article_id", "titulo")
 _ARTICLE_REQUIRED_FIELDS = ("article_id", "titulo", "body_text")
-_FIRST_CALL_REQUIRED_FIELDS = ("titulo", "fecha", "publicacion_key")
+_FIRST_CALL_REQUIRED_FIELDS = ("titulo", "fecha")
 
 
-def write_processed(identifier: str, workspace: Path, data: dict) -> dict:
-    """Escribe o amplía processed/{identifier}/: index.md + articles/{id}.md.
+def write_processed(
+    identifier: str, workspace: Path, publicacion_key: str, data: dict
+) -> dict:
+    """Escribe o amplía processed/{publicacion_key}/{identifier}/.
+
+    'publicacion_key' ya NO es un campo de 'data' — es un parámetro propio,
+    obligatorio en TODAS las llamadas (no solo la primera). Antes de
+    escribir, busca 'identifier' bajo CUALQUIER publicacion_key ya existente
+    (glob processed/*/{identifier}, no solo la ruta que implica la
+    publicacion_key pasada — comprobar solo esa ruta no detecta el caso,
+    ver nota en Contexto). Si aparece bajo una key distinta a la pasada,
+    lanza ValueError sin escribir nada — esta función no mueve un número
+    procesado de una revista a otra.
 
     Cada llamada es autocontenida: cada entrada en data['articulos'] debe
     incluir su body_text y se escribe de inmediato como fichero completo —
@@ -33,12 +45,13 @@ def write_processed(identifier: str, workspace: Path, data: dict) -> dict:
     Args:
         identifier: identificador del item en archive.org.
         workspace: ruta raíz del workspace local.
+        publicacion_key: key de la publicación — la misma en todas las
+            llamadas para este identifier.
         data: dict con las keys:
             titulo (str) — requerido si es la primera llamada para este
                 identifier; en llamadas posteriores, si se omite, se
                 conserva el valor ya guardado en index.md.
             fecha (str) — mismas reglas que titulo.
-            publicacion_key (str) — mismas reglas que titulo.
             volumen (str, opcional)
             numero (str, opcional)
             articulos (list[dict], requerido, puede ser vacía) — cada uno con:
@@ -58,12 +71,14 @@ def write_processed(identifier: str, workspace: Path, data: dict) -> dict:
 
     Raises:
         ValueError: si es la primera llamada para este identifier y falta
-            'titulo', 'fecha' o 'publicacion_key'; o si algún artículo de
-            'articulos' no tiene 'article_id', 'titulo' o 'body_text', o su
-            'article_id' no cumple el patrón {identifier}-{NN}.
+            'titulo' o 'fecha'; o si algún artículo de 'articulos' no tiene
+            'article_id', 'titulo' o 'body_text', o su 'article_id' no
+            cumple el patrón {identifier}-{NN}; o si 'identifier' ya existe
+            en processed/ bajo una publicacion_key distinta a la pasada.
     """
     workspace = Path(workspace)
-    existing_index = read_index(identifier, workspace)
+    _check_publicacion_key(workspace, identifier, publicacion_key)
+    existing_index = read_index(identifier, workspace, publicacion_key)
     articulos = list(data.get("articulos") or [])
 
     if existing_index is None:
@@ -78,7 +93,6 @@ def write_processed(identifier: str, workspace: Path, data: dict) -> dict:
         merged = {
             "titulo": data["titulo"],
             "fecha": data["fecha"],
-            "publicacion_key": data["publicacion_key"],
             "volumen": data.get("volumen"),
             "numero": data.get("numero"),
         }
@@ -88,27 +102,24 @@ def write_processed(identifier: str, workspace: Path, data: dict) -> dict:
         merged = {
             "titulo": data.get("titulo", existing_index.get("titulo")),
             "fecha": data.get("fecha", existing_index.get("fecha")),
-            "publicacion_key": data.get(
-                "publicacion_key", existing_index.get("publicacion_key")
-            ),
             "volumen": data.get("volumen", existing_index.get("volumen")),
             "numero": data.get("numero", existing_index.get("numero")),
         }
         indexed_articulos = list(existing_index.get("articulos") or [])
-        index_body = _read_raw(_index_path(workspace, identifier))[1]
+        index_body = _read_raw(_index_path(workspace, publicacion_key, identifier))[1]
 
     for articulo in articulos:
         _validate_articulo(identifier, articulo)
 
     article_paths: list[Path] = []
     for articulo in articulos:
-        article_path = _write_article(workspace, identifier, articulo)
+        article_path = _write_article(workspace, publicacion_key, identifier, articulo)
         article_paths.append(article_path)
         _upsert_index_articulo(indexed_articulos, articulo)
 
     index_front_matter = {
         "identifier": identifier,
-        "publicacion_key": merged["publicacion_key"],
+        "publicacion_key": publicacion_key,
         "titulo": merged["titulo"],
         "fecha": merged["fecha"],
         **({"volumen": merged["volumen"]} if merged["volumen"] is not None else {}),
@@ -117,14 +128,16 @@ def write_processed(identifier: str, workspace: Path, data: dict) -> dict:
         "processed_at": date.today(),
     }
     index_path = _write_markdown(
-        _index_path(workspace, identifier), index_front_matter, index_body
+        _index_path(workspace, publicacion_key, identifier),
+        index_front_matter,
+        index_body,
     )
 
     _upsert_catalog(
         workspace,
         {
             "identifier": identifier,
-            "publicacion_key": merged["publicacion_key"],
+            "publicacion_key": publicacion_key,
             "titulo": merged["titulo"],
             "fecha": merged["fecha"],
             "articulo_count": len(indexed_articulos),
@@ -135,33 +148,41 @@ def write_processed(identifier: str, workspace: Path, data: dict) -> dict:
     return {"index_path": index_path, "article_paths": article_paths}
 
 
-def read_index(identifier: str, workspace: Path) -> dict | None:
-    """Lee y parsea el front-matter de processed/{identifier}/index.md.
+def read_index(identifier: str, workspace: Path, publicacion_key: str) -> dict | None:
+    """Lee y parsea el front-matter de processed/{publicacion_key}/{identifier}/index.md.
 
     Args:
         identifier: identificador del item.
         workspace: ruta raíz del workspace local.
+        publicacion_key: key de la publicación a la que pertenece este
+            identifier. A diferencia de write_processed, una key que no
+            corresponde no es un error — simplemente no se encuentra nada.
 
     Returns:
         dict con el front-matter YAML, o None si el fichero no existe.
     """
-    raw = _read_raw(_index_path(Path(workspace), identifier))
+    raw = _read_raw(_index_path(Path(workspace), publicacion_key, identifier))
     return raw[0] if raw is not None else None
 
 
-def read_article(identifier: str, article_id: str, workspace: Path) -> dict | None:
+def read_article(
+    identifier: str, article_id: str, workspace: Path, publicacion_key: str
+) -> dict | None:
     """Lee un artículo procesado: front-matter + cuerpo.
 
     Args:
         identifier: identificador del item padre.
         article_id: identificador del artículo.
         workspace: ruta raíz del workspace local.
+        publicacion_key: key de la publicación a la que pertenece este
+            identifier. A diferencia de write_processed, una key que no
+            corresponde no es un error — simplemente no se encuentra nada.
 
     Returns:
         dict con las keys del front-matter más 'body_text' (el cuerpo del
         Markdown, sin el front-matter), o None si el fichero no existe.
     """
-    raw = _read_raw(_article_path(Path(workspace), identifier, article_id))
+    raw = _read_raw(_article_path(Path(workspace), publicacion_key, identifier, article_id))
     if raw is None:
         return None
 
@@ -172,24 +193,43 @@ def read_article(identifier: str, article_id: str, workspace: Path) -> dict | No
 # --- helpers internos ---
 
 
-def _processed_dir(workspace: Path, identifier: str) -> Path:
-    return Path(workspace) / "processed" / identifier
+def _processed_dir(workspace: Path, publicacion_key: str, identifier: str) -> Path:
+    return Path(workspace) / "processed" / publicacion_key / identifier
 
 
-def _index_path(workspace: Path, identifier: str) -> Path:
-    return _processed_dir(workspace, identifier) / "index.md"
+def _index_path(workspace: Path, publicacion_key: str, identifier: str) -> Path:
+    return _processed_dir(workspace, publicacion_key, identifier) / "index.md"
 
 
-def _articles_dir(workspace: Path, identifier: str) -> Path:
-    return _processed_dir(workspace, identifier) / "articles"
+def _articles_dir(workspace: Path, publicacion_key: str, identifier: str) -> Path:
+    return _processed_dir(workspace, publicacion_key, identifier) / "articles"
 
 
-def _article_path(workspace: Path, identifier: str, article_id: str) -> Path:
-    return _articles_dir(workspace, identifier) / f"{article_id}.md"
+def _article_path(
+    workspace: Path, publicacion_key: str, identifier: str, article_id: str
+) -> Path:
+    return _articles_dir(workspace, publicacion_key, identifier) / f"{article_id}.md"
 
 
 def _catalog_path(workspace: Path) -> Path:
     return Path(workspace) / CATALOG_FILENAME
+
+
+def _check_publicacion_key(workspace: Path, identifier: str, publicacion_key: str) -> None:
+    existing_key = _find_existing_publicacion_key(workspace, identifier)
+    if existing_key is not None and existing_key != publicacion_key:
+        raise ValueError(
+            f"identifier {identifier!r} ya existe en processed/ bajo "
+            f"publicacion_key {existing_key!r}, no se puede usar "
+            f"publicacion_key {publicacion_key!r}"
+        )
+
+
+def _find_existing_publicacion_key(workspace: Path, identifier: str) -> str | None:
+    matches = sorted(Path(workspace).glob(f"processed/*/{identifier}"))
+    if not matches:
+        return None
+    return matches[0].parent.name
 
 
 def _validate_articulo(identifier: str, articulo: dict) -> None:
@@ -212,7 +252,9 @@ def _is_valid_article_id(identifier: str, article_id: str) -> bool:
     return bool(pattern.match(article_id))
 
 
-def _write_article(workspace: Path, identifier: str, articulo: dict) -> Path:
+def _write_article(
+    workspace: Path, publicacion_key: str, identifier: str, articulo: dict
+) -> Path:
     front_matter = {
         "article_id": articulo["article_id"],
         "identifier": identifier,
@@ -221,7 +263,7 @@ def _write_article(workspace: Path, identifier: str, articulo: dict) -> Path:
         **({"paginas": articulo["paginas"]} if articulo.get("paginas") else {}),
         "processed_at": date.today(),
     }
-    path = _article_path(workspace, identifier, articulo["article_id"])
+    path = _article_path(workspace, publicacion_key, identifier, articulo["article_id"])
     return _write_markdown(path, front_matter, articulo["body_text"])
 
 
