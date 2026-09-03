@@ -6,7 +6,9 @@ Herramienta independiente, sin dependencia de `ta-ops`. Ver [`ARCHITECTURE.md`](
 
 ## Estado
 
-En diseño — ver `docs/backlog/` para los tickets especificados y su orden de dependencias. Ningún código se implementa sin ticket aprobado, siguiendo [`docs/DEV_STANDARDS.md`](docs/DEV_STANDARDS.md).
+Backlog inicial completo (9/9 tickets `DONE`, 67/67 tests) — motor, wizard, plugin y skill implementados y verificados de extremo a extremo, incluida una instalación real desde cero. Ver `docs/backlog/` para el histórico de tickets y [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) para instalar y usar el wizard. Ningún código se implementa sin ticket aprobado, siguiendo [`docs/DEV_STANDARDS.md`](docs/DEV_STANDARDS.md).
+
+**Pendiente para una instalación de usuario final "sin git" real:** publicar la primera release (`SETUP-02` está implementado, pero nadie ha ejecutado `publish_release` todavía) y dar de alta el plugin en Claude Code.
 
 ## Implementación asistida
 
