@@ -26,6 +26,8 @@ Dos problemas relacionados, encontrados juntos revisando cómo quedaría el work
 
 **Consecuencia de diseño:** como ahora hace falta saber `publicacion_key` para decidir *dónde* descargar, ya no puede resolverse solo en el momento de indexar (Flujo 2 de `SKILL-01`) — tiene que resolverse antes de descargar (Flujo 1). El registro de una publicación nueva se mueve de Flujo 2 a Flujo 1.
 
+**Ojo al implementar la detección de "publicacion_key equivocada":** comprobar solo si existe `processed/{publicacion_key_pasada}/{identifier}/` (o `sources/{publicacion_key_pasada}/{identifier}/`) **no detecta** el caso que se quiere evitar — si `publicacion_key` es la equivocada, esa ruta exacta no existirá nunca, así que la comprobación "ingenua" siempre pasaría de largo y crearía una carpeta duplicada bajo la key equivocada en silencio. Hace falta buscar el `identifier` **en cualquier key** (`glob("processed/*/{identifier}")` / `glob("sources/*/{identifier}")`) para poder comparar contra la key ya usada — ver Interfaces.
+
 ## Interfaces
 
 Firmas revisadas de `LIB-02` (`lib/downloader.py`) — añaden `publicacion_key` como parámetro requerido:
@@ -39,6 +41,12 @@ def fetch_essentials(
     (idempotente por fichero, omite ficheros ausentes sin error) — el único
     cambio es la ruta de destino, que ahora incluye publicacion_key.
 
+    Antes de escribir nada, busca 'identifier' bajo CUALQUIER publicacion_key
+    ya existente (glob sources/*/{identifier}, no solo la ruta que implica
+    la publicacion_key pasada — ver nota en Contexto sobre por qué la
+    comprobación ingenua no sirve). Si aparece bajo una key distinta a la
+    pasada, lanza ValueError sin descargar nada.
+
     Args:
         identifier: identificador del item en archive.org.
         workspace: ruta raíz del workspace local.
@@ -50,13 +58,20 @@ def fetch_essentials(
 
     Returns:
         Igual que antes, con "dir" apuntando a la nueva ruta anidada.
+
+    Raises:
+        ValueError: si 'identifier' ya existe en sources/ bajo una
+            publicacion_key distinta a la pasada.
+        LookupError, OSError: igual que antes.
     """
 
 def fetch_pdf(
     identifier: str, workspace: Path, publicacion_key: str, force: bool = False
 ) -> Path:
     """Igual que antes; destino ahora
-    sources/{publicacion_key}/{identifier}/{identifier}.pdf."""
+    sources/{publicacion_key}/{identifier}/{identifier}.pdf. Misma
+    comprobación de publicacion_key distinta que fetch_essentials — lanza
+    ValueError, no descarga bajo una key equivocada."""
 
 def fetch_page_image(
     identifier: str,
@@ -68,7 +83,8 @@ def fetch_page_image(
     force: bool = False,
 ) -> Path:
     """Igual que antes; destino ahora
-    sources/{publicacion_key}/{identifier}/images/leaf-{leaf}_{size}.jpg."""
+    sources/{publicacion_key}/{identifier}/images/leaf-{leaf}_{size}.jpg.
+    Misma comprobación de publicacion_key distinta que fetch_essentials."""
 ```
 
 `resolve_leaf` no cambia — sigue siendo una función pura sobre una lista ya cargada, sin tocar el filesystem.
@@ -82,10 +98,13 @@ def write_processed(
     """Escribe o amplía processed/{publicacion_key}/{identifier}/.
 
     'publicacion_key' ya NO es un campo de 'data' — es un parámetro propio,
-    obligatorio en TODAS las llamadas (no solo la primera). Si ya existe
-    processed/*/{identifier}/ bajo una publicacion_key distinta a la
-    pasada, lanza ValueError — esta función no mueve un número procesado
-    de una revista a otra.
+    obligatorio en TODAS las llamadas (no solo la primera). Antes de
+    escribir, busca 'identifier' bajo CUALQUIER publicacion_key ya existente
+    (glob processed/*/{identifier}, no solo la ruta que implica la
+    publicacion_key pasada — comprobar solo esa ruta no detecta el caso,
+    ver nota en Contexto). Si aparece bajo una key distinta a la pasada,
+    lanza ValueError sin escribir nada — esta función no mueve un número
+    procesado de una revista a otra.
 
     Args:
         identifier: identificador del item en archive.org.
@@ -150,10 +169,11 @@ def read_article(identifier: str, article_id: str, workspace: Path, publicacion_
 
 - `fetch_essentials(id, workspace, "revista-a")` → escribe en `sources/revista-a/{id}/`, no en `sources/{id}/`
 - `fetch_essentials` para un segundo `identifier` con la misma `publicacion_key` → ambas carpetas conviven bajo `sources/revista-a/`, ninguna pisa a la otra
-- `fetch_pdf`/`fetch_page_image` con `publicacion_key` — mismas rutas anidadas, idempotencia por fichero sin cambios de comportamiento
+- `fetch_essentials(id_ya_bajo_revista_a, workspace, "revista-b")` → lanza `ValueError` **sin descargar nada** (ni siquiera `metadata.json`) — es el caso que la comprobación ingenua (solo mirar `sources/revista-b/{id}/`) no detectaría, por eso es el test obligatorio, no uno más
+- `fetch_pdf`/`fetch_page_image` con `publicacion_key` — mismas rutas anidadas, idempotencia por fichero sin cambios de comportamiento; mismo caso de `ValueError` con key distinta a la ya usada para ese identifier
 - `write_processed(id, workspace, "revista-a", data)` sin `publicacion_key` dentro de `data` → funciona igual que antes, usando el parámetro
-- `write_processed(id, workspace, "revista-b", data)` para un `identifier` ya procesado antes bajo `"revista-a"` → lanza `ValueError`
-- `read_index`/`read_article` con la `publicacion_key` correcta → devuelven lo esperado; con una `publicacion_key` que no corresponde → `None` (no busca en otras revistas)
+- `write_processed(id, workspace, "revista-b", data)` para un `identifier` ya procesado antes bajo `"revista-a"` → lanza `ValueError` **sin escribir nada** — mismo motivo: `_processed_dir(workspace, "revista-b", id)` no existe, así que la detección tiene que buscar en todas las keys, no solo en la pasada
+- `read_index`/`read_article` con la `publicacion_key` correcta → devuelven lo esperado; con una `publicacion_key` que no corresponde → `None` (no busca en otras revistas — a diferencia de `write_processed`, aquí "no encontrado" es una respuesta válida, no un error)
 - Sesión manual (SKILL-01): pedir un número de una revista nueva → el skill pregunta key/label en Flujo 1, antes de descargar nada, y `sources/{key}/{id}/` aparece con esa key
 - Sesión manual (SKILL-01): pedir un segundo número de una revista ya registrada → el skill NO vuelve a preguntar key/label, resuelve `publicacion_key` de `publications.yaml`, y el número nuevo aparece bajo la misma carpeta `sources/{key}/` que el primero
 - Sesión manual (SKILL-01): verificar que `publications.yaml` acaba con `archive_identifiers` conteniendo ambos identifiers tras el paso anterior (no solo el último)
@@ -161,4 +181,4 @@ def read_article(identifier: str, article_id: str, workspace: Path, publicacion_
 ## Estado de revisión
 
 - Propuesto: 2026-09-03
-- Aprobado: PENDIENTE
+- Aprobado: 2026-09-03 — supervisor (chat): precisada la detección de publicacion_key distinta (glob sobre todas las keys, la comprobación ingenua no la detecta)
