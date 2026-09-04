@@ -19,8 +19,11 @@ Un ticket por pieza de funcionalidad. Ninguno pasa a `IN_PROGRESS` sin estado de
 | [PLUGIN-02](ISSUE_PLUGIN-02_marketplace.md) | Añadir .claude-plugin/marketplace.json — requisito real para instalar el plugin | P1 | DONE | PLUGIN-01 |
 | [SETUP-03](ISSUE_SETUP-03_cowork_setup_skill.md) | Skill de setup nativo de Cowork — sin terminal, sin repo de desarrollador | P1 | DONE | LIB-04, SKILL-01 |
 | [MCP-01](ISSUE_MCP-01_local_bridge_server.md) | Servidor MCP local — bridge de red para Cowork/Claude Desktop sobre el motor existente | P1 | DONE | LIB-01, LIB-02, LIB-03, LIB-04 |
+| [MCP-02](ISSUE_MCP-02_mcpb_bundle_distribuible.md) | Bundle .mcpb distribuible del servidor MCP — un solo asset para cualquier usuario | P1 | TODO | MCP-01, SETUP-01, SETUP-02 |
 
-**12/12 tickets `DONE` — 101/101 tests pasan.** `SETUP-03` es un camino de instalación *adicional*, no un reemplazo: cubre Cowork (sin terminal, usuarios sin el repo como un desarrollador), mientras `SETUP-01`/`PLUGIN-01`/`PLUGIN-02` siguen siendo el camino correcto para Claude Code CLI. `CLI-01`, `LIB-05` y `PLUGIN-02` se añadieron después del backlog original: gaps reales detectados en validación/prueba real, no en el diseño de escritorio — `pyproject.toml` declaraba un entry point sin implementar; `sources/`/`processed/` planos por identifier no distinguían revistas; y `PLUGIN-01` nunca incluyó el `marketplace.json` que la documentación oficial de Claude Code exige para poder instalar el plugin de verdad. `MCP-01` adelanta parte de la Fase 3 (`ARCHITECTURE.md` §02) porque, además del modo colaborativo original, resuelve un bloqueo real detectado en pruebas de `SETUP-03`: ninguna superficie de ejecución de Cowork tiene red real y escritura local a la vez, y un servidor MCP local sí.
+**12/13 tickets `DONE` — 101/101 tests pasan, `MCP-02` en revisión.**
+
+`MCP-01` se validó con una prueba real de extremo a extremo (2026-09-04): registrar el servidor vía `claude mcp add`/`~/.claude.json` **no** llega a una sesión de Cowork, pero una extensión `.mcpb` instalada en la app sí — confirmado con una descarga real de archive.org (`coevolutionquart00unse_15`/`_16`) desde dos llamadas distintas en la misma sesión, sin estado colgado entre ellas. `MCP-02` construye el `.mcpb` distribuible real (la prueba usó uno hecho a mano con una ruta de una sola máquina) — ver `ARCHITECTURE.md` §01/§03b para el detalle revisado. `SETUP-03` es un camino de instalación *adicional*, no un reemplazo: cubre Cowork (sin terminal, usuarios sin el repo como un desarrollador), mientras `SETUP-01`/`PLUGIN-01`/`PLUGIN-02` siguen siendo el camino correcto para Claude Code CLI. `CLI-01`, `LIB-05` y `PLUGIN-02` se añadieron después del backlog original: gaps reales detectados en validación/prueba real, no en el diseño de escritorio — `pyproject.toml` declaraba un entry point sin implementar; `sources/`/`processed/` planos por identifier no distinguían revistas; y `PLUGIN-01` nunca incluyó el `marketplace.json` que la documentación oficial de Claude Code exige para poder instalar el plugin de verdad. `MCP-01` adelanta parte de la Fase 3 (`ARCHITECTURE.md` §02) porque, además del modo colaborativo original, resuelve un bloqueo real detectado en pruebas de `SETUP-03`: ninguna superficie de ejecución de Cowork tiene red real y escritura local a la vez, y un servidor MCP local sí.
 
 ## Critical path
 
@@ -30,7 +33,8 @@ LIB-04 ─┘        └──→ SETUP-01 ─┬─→ PLUGIN-01
                      SETUP-02 ──┘
                      SETUP-01 ──→ CLI-01
 
-LIB-01, LIB-02, LIB-03, LIB-04 ──→ MCP-01
+LIB-01, LIB-02, LIB-03, LIB-04 ──→ MCP-01 ─┬─→ MCP-02
+                         SETUP-01, SETUP-02 ──┘
 ```
 
 `CLI-01` depende de `SETUP-01` en el backlog (necesita `lib.setup.run_wizard`), pero **no** bloquea a `PLUGIN-01` en el grafo — `PLUGIN-01` ya se implementó y mergeó sin él. Es una dependencia *funcional* (el flujo real de instalación no funciona sin `CLI-01`), no una dependencia de backlog — por eso pudo colarse: nada en el grafo de tickets la exigía.
