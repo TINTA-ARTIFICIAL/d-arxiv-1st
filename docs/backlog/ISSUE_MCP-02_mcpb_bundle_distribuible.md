@@ -4,13 +4,13 @@ title: Bundle .mcpb distribuible del servidor MCP — un solo asset para cualqui
 type: feature
 subsystem: MCP
 sprint: backlog
-status: IN_PROGRESS
+status: DONE
 priority: P1
 depends_on: [MCP-01, SETUP-01, SETUP-02]
 blocks: []
 assignee: D-developer
 started: 2026-09-04
-completed: null
+completed: 2026-09-04
 branch: feat/MCP-02-mcpb-bundle-distribuible
 ---
 
