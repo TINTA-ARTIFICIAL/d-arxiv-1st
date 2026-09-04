@@ -154,4 +154,4 @@ propios del motor.
 ## Estado de revisión
 
 - Propuesto: 2026-09-04
-- Aprobado: PENDIENTE
+- Aprobado: 2026-09-04 — supervisor (chat), confirmado que la instalación manual del .mcpb (doble clic/arrastrar/Settings) es el proceso aceptado, sin buscar automatizarla
