@@ -12,33 +12,35 @@ updated: 2026-09-02
 
 Es una herramienta **independiente** de `ta-ops` — repo propio, arquitectura propia. Puede evolucionar a compartir workspace con `ta-ops` en el futuro, pero no depende de él ni asume sus convenciones.
 
-Se entrega como **Plugin de Claude Code** que empaqueta un **Skill** conversacional. El motor (descarga, procesado) es una librería Python pura, sin dependencias de Claude — así el plugin puede envolver un servidor MCP más adelante (modo colaborativo) sin reescribir el motor.
+Se entrega como **Plugin de Claude Code** que empaqueta un **Skill** conversacional. El motor (descarga, procesado) es una librería Python pura, sin dependencias de Claude — eso es lo que permitió añadir, ya en Fase 1, una tercera interfaz sobre el mismo motor: un **servidor MCP local** (`mcp_server/`, `MCP-01`) sin reescribir nada de `lib/`.
 
 ```
-┌──────────────────────────────────────────────┐
-│              Claude Code (chat)               │
-│   Plugin d-arxiv-1st → Skill archive-ingest   │
-└───────────────────────┬────────────────────────┘
-                        │ invoca
-                        ▼
-┌──────────────────────────────────────────────┐
-│                  cli/ (d-arxiv)                │
-│      wizard · fetch · process · discover       │
-└───────────────────────┬────────────────────────┘
-                        │
-                        ▼
-┌──────────────────────────────────────────────┐
-│                    lib/                         │
-│  archive_client · downloader · processor        │
-│  config · publications                          │
-└───────────────────────┬────────────────────────┘
-                        │
-                        ▼
+┌──────────────────────────────┐   ┌──────────────────────────────┐
+│      Claude Code (chat)       │   │   Cowork / Claude Desktop     │
+│ Plugin d-arxiv-1st → Skill    │   │  Extensión .mcpb → servidor   │
+│ archive-ingest                │   │  MCP local (mcp_server/)      │
+└───────────────┬────────────────┘   └───────────────┬────────────────┘
+                │ invoca                             │ tools MCP (stdio)
+                ▼                                     │
+┌──────────────────────────────────────────────┐      │
+│                  cli/ (d-arxiv)                │      │
+│      wizard · fetch · process · discover       │      │
+└───────────────────────┬────────────────────────┘      │
+                        │                                │
+                        ▼                                ▼
+┌──────────────────────────────────────────────────────────┐
+│                          lib/                              │
+│      archive_client · downloader · processor · config      │
+└───────────────────────────┬────────────────────────────────┘
+                            │
+                            ▼
 ┌──────────────────────────────────────────────┐
 │         Workspace (local o carpeta sync)        │
 │   sources/ · processed/ · publications.yaml     │
 └──────────────────────────────────────────────┘
 ```
+
+**Por qué existe la interfaz MCP (adelantado de Fase 3, no planeado originalmente en Fase 1):** verificado en pruebas reales de `SETUP-03` que una sesión de Cowork no tiene red real hacia archive.org (su VM de ejecución de código está sujeta a `allowManagedDomainsOnly`, que ignora cualquier allowlist de proyecto) — así que `skills/archive-ingest` no puede invocar el motor directamente ahí. Verificado también, en pruebas reales, que ni `.claude/settings.json` ni el registro de servidores MCP vía `claude mcp add`/`~/.claude.json` llegan a una sesión de Cowork. Lo que sí funciona, confirmado con una descarga real de archive.org de extremo a extremo: una extensión **`.mcpb`** (MCP Bundle, formato oficial de Anthropic) instalada una vez en la app — sus tools quedan disponibles en las sesiones de Cowork de esa cuenta. Ver `MCP-01` y §03b para el detalle.
 
 ---
 
@@ -48,7 +50,7 @@ Se entrega como **Plugin de Claude Code** que empaqueta un **Skill** conversacio
 
 **Fase 2** — generalización: `publications.yaml` curado, `discover` de colecciones enteras vía `advancedsearch.php`, ingesta batch reutilizando el pipeline de Fase 1.
 
-**Fase 3 (fuera de scope por ahora)** — entorno colaborativo: workspace compartido, servidor MCP, múltiples usuarios. El diseño de Fase 1/2 debe dejar esto abierto (motor desacoplado de la interfaz) sin implementarlo.
+**Fase 3 (fuera de scope, salvo lo ya adelantado)** — entorno colaborativo: workspace compartido, múltiples usuarios. El diseño de Fase 1/2 debe dejar esto abierto (motor desacoplado de la interfaz) sin implementarlo. **Excepción ya implementada:** el servidor MCP local (`MCP-01`) se adelantó a Fase 1 porque, además de sentar la base del modo colaborativo, resuelve el bloqueo real de red de Cowork (ver §01) — pero sigue siendo un bridge local de un solo usuario, no el modo colaborativo (workspace compartido en red, multi-usuario) que sigue pendiente.
 
 ---
 
@@ -86,11 +88,11 @@ Tres caminos, deliberadamente distintos, para tres públicos distintos:
 
 - **Desarrollador (contribuye a `d-arxiv-1st`)**: clona el repo, `pip install -e .[dev]`, trabaja sobre los tickets de `docs/backlog/`. Flujo de siempre, documentado en `README.md`/`CONTRIBUTING.md`, sin wizard — quien contribuye código ya sabe manejarse con git y pip.
 - **Usuario final de Claude Code CLI**: instala desde una **release publicada** (ver `SETUP-02`), nunca desde un clon de git. El wizard (`SETUP-01`) crea un entorno autocontenido en `~/.d-arxiv-1st/venv/` — una ruta fija, propiedad del usuario, que no depende de que ningún directorio de repo siga existiendo en ningún sitio. Instalar, mover el plugin de carpeta, o borrar un clon de desarrollo en otra parte de la máquina no rompe nada. Requiere `.claude-plugin/plugin.json` + `marketplace.json` (`PLUGIN-01`/`PLUGIN-02`) para poder instalarse vía `/plugin marketplace add` + `/plugin install`.
-- **Usuario final de Cowork** (`SETUP-03`): un público adicional, sin repo, sin terminal, verificado que puede no tener el código como lo tiene un desarrollador — solo una carpeta descargada de una release. No usa venv ni el mecanismo de plugins de Claude Code (no aplica en Cowork) — Cowork ejecuta código nativamente dentro de las carpetas que el usuario conecta a la sesión, así que un skill de setup nativo (`skills/setup-cowork/`) hace las mismas preguntas del wizard pidiendo permiso paso a paso, sin necesidad de aislar nada.
+- **Usuario final de Cowork** (`SETUP-03` + `MCP-01`): un público adicional, sin repo, sin terminal, verificado que puede no tener el código como lo tiene un desarrollador. **Revisión tras prueba real (2026-09-04):** el diseño original de `SETUP-03` asumía que `skills/setup-cowork/` podía invocar el motor directamente con Bash+Python dentro de la propia sesión de Cowork, igual que un desarrollador. Verificado que es falso — la VM donde Cowork ejecuta código no tiene red real hacia archive.org (`allowManagedDomainsOnly`, ignora cualquier allowlist de proyecto). `skills/setup-cowork/` y `skills/archive-ingest/` siguen siendo correctos para todo lo que es I/O de ficheros puro (leer/escribir en la carpeta conectada, trabajar con contenido ya descargado), pero **no pueden traer contenido nuevo de archive.org por sí solos**. Eso requiere la extensión `.mcpb` del servidor MCP (`MCP-01`) instalada una vez en la app, fuera de la sesión de Cowork — confirmado con una descarga real de extremo a extremo. Es un paso de instalación que, por diseño, no puede completarse desde dentro de un chat de Cowork (el servidor tiene que registrarse contra la máquina real del usuario, no contra la VM efímera de la sesión).
 
 **Decisión (Claude Code CLI):** el venv de instalación vive siempre en `~/.d-arxiv-1st/venv/`, nunca dentro de un checkout de git. **Alternativa descartada:** crear el venv dentro del propio directorio del repo clonado (`{repo}/.venv`), como hace `pip install -e .` en un flujo de desarrollador típico. **Justificación:** un editable install (`-e .`) enlaza el venv al código fuente en su ubicación original — si esa carpeta se mueve o se borra, el venv deja de funcionar en silencio. Para un usuario final eso es inaceptable; para un desarrollador es aceptable (sabe que no debe borrar su propio checkout).
 
-**Decisión (Cowork):** sin venv, sin plugin/marketplace — ver `SETUP-03` para la justificación completa. No es un reemplazo del camino de Claude Code CLI, es un camino adicional para un producto distinto.
+**Decisión (Cowork):** `skills/setup-cowork/` sigue sin venv ni plugin/marketplace — ver `SETUP-03` para la justificación completa de esa parte. Pero para poder traer contenido nuevo de archive.org (no solo trabajar con lo ya descargado), Cowork depende además de la extensión `.mcpb` del servidor MCP (`MCP-01`), instalada una vez fuera de la sesión — ver §01 y la revisión de `SETUP-03` arriba. No es un reemplazo del camino de Claude Code CLI, es un camino adicional para un producto distinto, con esta pieza extra de instalación que le es propia.
 
 ---
 
