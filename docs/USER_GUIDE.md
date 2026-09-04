@@ -69,7 +69,7 @@ Necesitas el motor instalado en tu máquina real (**paso 1**, idéntico a A) má
 2. arrástralo a la ventana de la app de Claude, o
 3. Settings → Extensions → Advanced settings → Install Extension… y selecciónalo
 
-Confirmas permisos en la propia pantalla de instalación. No hace falta repetir esto por sesión — una vez instalada, la extensión queda disponible en cualquier chat nuevo de esa cuenta.
+La pantalla de instalación te pide confirmar una ruta ("Ejecutable d-arxiv-mcp") — viene rellena por defecto con `~/.d-arxiv-1st/venv/bin/d-arxiv-mcp`, la misma ruta fija que deja el wizard en el paso 1, así que en el caso normal no hace falta tocarla, solo confirmar permisos. Si instalaste el motor en otra ubicación, edítala ahí antes de confirmar. No hace falta repetir esto por sesión — una vez instalada, la extensión queda disponible en cualquier chat nuevo de esa cuenta.
 
 **Paso 3 — conecta la carpeta del workspace a tu sesión de Cowork** (la misma ruta que configuraste en el paso 1). Esto es aparte de la extensión: la extensión trae contenido nuevo escribiéndolo en esa carpeta; conectarla es lo que deja que la propia sesión de Cowork lea/edite lo que ya hay ahí.
 

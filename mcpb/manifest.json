@@ -1,0 +1,30 @@
+{
+  "manifest_version": "0.3",
+  "name": "d-arxiv-1st",
+  "display_name": "D-ARXIV-1ST",
+  "version": "0.1.0",
+  "description": "Descarga, procesa e indexa publicaciones de Internet Archive para explotación con IA.",
+  "author": {
+    "name": "TINTA-ARTIFICIAL"
+  },
+  "server": {
+    "type": "python",
+    "entry_point": "server/server.py",
+    "mcp_config": {
+      "command": "${user_config.venv_path}",
+      "args": []
+    }
+  },
+  "user_config": {
+    "venv_path": {
+      "type": "file",
+      "title": "Ejecutable d-arxiv-mcp",
+      "description": "Ruta al ejecutable d-arxiv-mcp que instala el wizard (SETUP-01) dentro de ~/.d-arxiv-1st/venv/. Déjalo con el valor por defecto salvo que hayas instalado el motor en otra ubicación.",
+      "default": "${HOME}/.d-arxiv-1st/venv/bin/d-arxiv-mcp",
+      "required": true
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin"]
+  }
+}
