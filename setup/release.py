@@ -1,12 +1,13 @@
-"""Empaquetado del motor (wheel) y publicación de releases en GitHub.
+"""Empaquetado del motor (wheel, .mcpb) y publicación de releases en GitHub.
 
-Ticket: SETUP-02
+Ticket: SETUP-02, MCP-02
 """
 
 from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -68,18 +69,85 @@ def build_wheel(repo_dir: Path, dist_dir: Path) -> Path:
     return wheels[-1].resolve()
 
 
+def build_mcpb(repo_dir: Path, dist_dir: Path) -> Path:
+    """Construye el .mcpb del servidor MCP a partir de mcpb/manifest.json.
+
+    Copia mcp_server/*.py a un directorio de build temporal, bajo
+    server/, junto al manifest.json de mcpb/, y empaqueta ese directorio
+    con el CLI externo 'mcpb pack' (ver MCP-02) — la ejecución real del
+    servidor la resuelve mcp_config.command vía user_config, no estos
+    ficheros copiados, que quedan como metadata/documentación del
+    entry_point.
+
+    Args:
+        repo_dir: raíz del repo (donde están mcpb/manifest.json y
+            mcp_server/).
+        dist_dir: directorio donde escribir el .mcpb generado.
+
+    Returns:
+        Path absoluto del fichero .mcpb generado.
+
+    Raises:
+        RuntimeError: si el CLI 'mcpb' no está disponible en el PATH, o si
+            'mcpb pack' falla (el mensaje de error incluye la salida del
+            comando).
+    """
+    repo_dir = Path(repo_dir)
+    dist_dir = Path(dist_dir)
+    dist_dir.mkdir(parents=True, exist_ok=True)
+
+    mcpb_path = dist_dir / "d-arxiv-1st.mcpb"
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        build_dir = Path(tmp_dir) / "mcpb"
+        server_dir = build_dir / "server"
+        server_dir.mkdir(parents=True)
+
+        shutil.copy2(
+            repo_dir / "mcpb" / "manifest.json", build_dir / "manifest.json"
+        )
+        for py_file in sorted((repo_dir / "mcp_server").glob("*.py")):
+            shutil.copy2(py_file, server_dir / py_file.name)
+
+        try:
+            result = subprocess.run(
+                ["mcpb", "pack", str(build_dir), str(mcpb_path)],
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                "el CLI 'mcpb' no está disponible en el PATH — instálalo con "
+                "'npm install -g @anthropic-ai/mcpb' antes de publicar"
+            ) from exc
+
+        output = result.stdout + result.stderr
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"'mcpb pack' falló para {str(build_dir)!r}:\n{output}"
+            )
+
+    if not mcpb_path.exists():
+        raise RuntimeError(f"'mcpb pack' no produjo {str(mcpb_path)!r}")
+
+    return mcpb_path.resolve()
+
+
 def publish_release(
     repo: str,
     tag: str,
+    repo_dir: Path,
     wheel_path: Path,
     skill_dir: Path,
     notes: str = "",
 ) -> dict:
-    """Publica una release en GitHub con el wheel y el skill como assets.
+    """Publica una release en GitHub con el wheel, el skill y el .mcpb.
 
     Args:
         repo: 'OWNER/REPO', ej. 'TINTA-ARTIFICIAL/d-arxiv-1st'.
         tag: tag de versión, ej. 'v0.1.0'. Debe seguir semver.
+        repo_dir: raíz del repo — de aquí se construye el .mcpb
+            (build_mcpb, ver MCP-02).
         wheel_path: ruta al .whl construido por build_wheel.
         skill_dir: ruta a skills/archive-ingest/ — se empaqueta como .zip
             y se sube como segundo asset (install_engine solo necesita el
@@ -88,14 +156,15 @@ def publish_release(
         notes: notas de la release (changelog breve).
 
     Returns:
-        dict {"release_url": str, "wheel_asset_url": str, "skill_asset_url": str}.
+        dict {"release_url": str, "wheel_asset_url": str,
+        "skill_asset_url": str, "mcpb_asset_url": str}.
 
     Raises:
         ValueError: si 'tag' no sigue el patrón semver (vMAJOR.MINOR.PATCH).
         RuntimeError: si ya existe una release con ese tag (no sobreescribe
             releases publicadas — una versión es inmutable una vez publicada),
-            o si falta la variable de entorno GITHUB_TOKEN necesaria para
-            autenticar contra la API de GitHub.
+            si falta la variable de entorno GITHUB_TOKEN necesaria para
+            autenticar contra la API de GitHub, o si build_mcpb falla.
     """
     if not _SEMVER_TAG_PATTERN.match(tag):
         raise ValueError(
@@ -121,10 +190,14 @@ def publish_release(
             release_data["upload_url"], headers, skill_zip_path
         )
 
+        mcpb_path = build_mcpb(Path(repo_dir), Path(tmp_dir) / "mcpb-dist")
+        mcpb_asset_url = _upload_asset(release_data["upload_url"], headers, mcpb_path)
+
     return {
         "release_url": release_data["html_url"],
         "wheel_asset_url": wheel_asset_url,
         "skill_asset_url": skill_asset_url,
+        "mcpb_asset_url": mcpb_asset_url,
     }
 
 
