@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "d-arxiv-1st",
   "display_name": "D-ARXIV-1ST",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Descarga, procesa e indexa publicaciones de Internet Archive para explotación con IA.",
   "author": {
     "name": "TINTA-ARTIFICIAL"
