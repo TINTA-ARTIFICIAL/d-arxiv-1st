@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import filecmp
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -19,6 +20,11 @@ from typing import TextIO
 from lib.config import save_config, save_install_state
 
 DEFAULT_VENV = Path.home() / ".d-arxiv-1st" / "venv"
+
+# Debe coincidir literalmente con _SKILL_SOURCE_ENV_VAR en scripts/bootstrap.py.
+# No se puede compartir vía import: bootstrap.py corre antes de que 'lib/'
+# esté instalado (resuelve el problema del huevo y la gallina, ver su docstring).
+_SKILL_SOURCE_ENV_VAR = "D_ARXIV_1ST_SKILL_SOURCE_DIR"
 
 _GITHUB_REPO = "TINTA-ARTIFICIAL/d-arxiv-1st"
 _GITHUB_LATEST_RELEASE_API = (
@@ -47,6 +53,13 @@ def run_wizard(
             tests y para invocación no interactiva desde el slash command.
         stdin: stream de entrada para los prompts (inyectable para tests).
         stdout: stream de salida para los mensajes (inyectable para tests).
+
+    Si 'skill_source_dir' no viene en los answers (interactivos o no), se
+    completa desde la variable de entorno D_ARXIV_1ST_SKILL_SOURCE_DIR si
+    está definida (la pone scripts/bootstrap.py cuando descarga el skill
+    desde el .zip de una release, sin checkout de git) — sin esto, seguir
+    sin skill_source_dir explícito y sin checkout local hace que
+    install_skill falle con RuntimeError.
 
     Returns:
         dict con:
@@ -83,6 +96,11 @@ def run_wizard(
         answers = _validate_non_interactive_answers(non_interactive_answers)
     else:
         answers = _prompt_answers(stdin, stdout)
+
+    if "skill_source_dir" not in answers:
+        env_skill_source_dir = os.environ.get(_SKILL_SOURCE_ENV_VAR)
+        if env_skill_source_dir:
+            answers["skill_source_dir"] = env_skill_source_dir
 
     workspace_root = answers["workspace_root"]
     download = answers["download"]

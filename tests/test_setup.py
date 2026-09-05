@@ -5,6 +5,7 @@ Ticket: SETUP-01
 
 from __future__ import annotations
 
+import io
 import sys
 import urllib.error
 from pathlib import Path
@@ -137,6 +138,46 @@ def test_run_wizard_sin_workspace_root_lanza_valueerror(
 
     with pytest.raises(ValueError, match="workspace_root"):
         setup.run_wizard(non_interactive_answers={})
+
+
+def test_run_wizard_interactivo_completa_skill_source_dir_desde_env_var(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Regresión: bootstrap.py pasa el origen del skill (descargado del
+    .zip de una release, sin checkout de git) vía la variable de entorno
+    D_ARXIV_1ST_SKILL_SOURCE_DIR — sin leerla, el wizard interactivo
+    fallaba con RuntimeError en cualquier máquina sin checkout local,
+    aunque bootstrap.py hubiera descargado el skill correctamente.
+    """
+    workspace_root = tmp_path / "workspace"
+    skill_source = _make_skill_source(tmp_path)
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    monkeypatch.chdir(work_dir)
+    monkeypatch.setenv(setup._SKILL_SOURCE_ENV_VAR, str(skill_source))
+
+    monkeypatch.setattr(setup, "_check_archive_org_reachable", lambda: True)
+    monkeypatch.setattr(
+        setup,
+        "install_engine",
+        lambda: {
+            "venv_path": "/fake/venv",
+            "engine_source": "fake-release-url",
+            "editable": False,
+        },
+    )
+    monkeypatch.setattr(setup, "save_config", MagicMock())
+    monkeypatch.setattr(setup, "save_install_state", MagicMock())
+
+    stdin = io.StringIO(f"{workspace_root}\nproject\n")
+    stdout = io.StringIO()
+
+    result = setup.run_wizard(stdin=stdin, stdout=stdout)
+
+    assert result["skill_path"] == str(
+        (work_dir / ".claude" / "skills" / "archive-ingest").resolve()
+    )
+    assert Path(result["skill_path"], "SKILL.md").exists()
 
 
 # --- check_prerequisites ---
